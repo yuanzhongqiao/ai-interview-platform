@@ -1,41 +1,4 @@
-<p align="center">
-  <a href="https://aural-ai.com">
-    <img src="public/images/marketing/logo.png" alt="Aural" width="80" height="80" />
-  </a>
-</p>
-
-<h1 align="center">Aural</h1>
-
-<p align="center">
-  <strong>Deep Conversations, Automated Insights.</strong><br/>
-  Open-source AI interview platform for voice, chat, and video.
-</p>
-
-<p align="center">
-  <a href="https://aural-ai.com">Website</a> &nbsp;·&nbsp;
-  <a href="https://youtu.be/Mmn1tjTzuwQ">Video Intro</a> &nbsp;·&nbsp;
-  <a href="https://aural-ai.com/docs">Docs</a> &nbsp;·&nbsp;
-  <a href="#deployment">Deploy</a>
-</p>
-
-<p align="center">
-  <a href="https://github.com/1146345502/aural-oss/actions/workflows/ci.yml"><img src="https://github.com/1146345502/aural-oss/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" /></a>
-  <a href="https://github.com/1146345502/aural-oss/releases/latest"><img src="https://img.shields.io/github/v/release/1146345502/aural-oss?color=orange" alt="Latest Release" /></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License" /></a>
-  <img src="https://img.shields.io/badge/node-%3E%3D18-brightgreen" alt="Node 18+" />
-  <img src="https://img.shields.io/badge/Next.js-14-black" alt="Next.js 14" />
-  <img src="https://img.shields.io/badge/TypeScript-5-3178c6" alt="TypeScript" />
-  <img src="https://img.shields.io/badge/Supabase-PostgreSQL-3ecf8e" alt="Supabase" />
-</p>
-
-<br/>
-
-<p align="center">
-  <a href="https://aural-ai.com">
-    <img src="public/images/marketing/hero-screenshots.webp" alt="Aural — AI-powered interview platform" width="820" />
-  </a>
-</p>
-
+ 
 <p align="center">
   Design an interview in plain language. Share a link. Aural's AI conducts the conversation —<br/>
   asking questions, probing with follow-ups, and generating detailed analysis when the session ends.
