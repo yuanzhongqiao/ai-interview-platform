@@ -1,6 +1,6 @@
  
 <p align="center">
-  Design an interview in plain language. Share a link. Deep OS 's AI conducts the conversation —<br/>
+  Design an interview in plain language. Share a link. DeepInterviewer OS 's AI conducts the conversation —<br/>
   asking questions, probing with follow-ups, and generating detailed analysis when the session ends.
 </p>
 
@@ -47,7 +47,7 @@
 
 ---
 
-## See Aural in Action
+## See DeepInterviewer in Action
 
 <p align="center">
   <a href="https://youtu.be/Mmn1tjTzuwQ">
@@ -71,7 +71,7 @@
 
 ## Product Tour
 
-Aural is an AI-powered interview platform that conducts structured interviews autonomously. You design an interview, share a link, and Aural's AI handles the conversation — asking questions, probing with follow-ups, and generating detailed analysis when the session is complete.
+DeepInterviewer is an AI-powered interview platform that conducts structured interviews autonomously. You design an interview, share a link, and DeepInterviewer's AI handles the conversation — asking questions, probing with follow-ups, and generating detailed analysis when the session is complete.
 
 ### Design Your Interview
 
@@ -319,7 +319,7 @@ The fastest way to get started. No setup required — sign up and start creating
 
 ### Self-Hosted
 
-Run Aural on your own servers for full control over data, configuration, and customization.
+Run DeepInterviewer on your own servers for full control over data, configuration, and customization.
 
 #### Prerequisites
 
@@ -331,8 +331,8 @@ Run Aural on your own servers for full control over data, configuration, and cus
 #### 1. Clone and Install
 
 ```bash
-git clone https://github.com/1146345502/aural-oss.git
-cd aural-oss
+git clone https://github.com/yuanzhongqiao/ai-interview-platform.git
+cd ai-interview-platform
 npm install
 ```
 
@@ -458,7 +458,7 @@ Practice feedback uses the same LLM provider chain as interview generation. Voic
 
 ## AI Provider System
 
-Aural uses a pluggable LLM provider architecture. You need **at least one** provider configured. The system auto-selects the first available provider in this order: OpenAI > Gemini > Kimi > MiniMax.
+DeepInerviewer uses a pluggable LLM provider architecture. You need **at least one** provider configured. The system auto-selects the first available provider in this order: OpenAI > Gemini > Kimi > MiniMax.
 
 ### Providers
 
@@ -620,5 +620,5 @@ This project is licensed under the MIT License — see the [LICENSE](LICENSE) fi
 ---
 
 <p align="center">
-  <sub>Built by <a href="https://aural-ai.com">AuraTerra Nexus</a> — Every voice heard, every insight captured.</sub>
+  <sub>Built by <a href="https://ai-inter.dpqq.com">DeepInerviewer</a> — Every voice heard, every insight captured.</sub>
 </p>
