@@ -94,8 +94,10 @@ export default function PublicInterviewPage() {
     setStoredSessionId(null);
   }, [slug]);
 
+  const interviewTitle = interview.data?.title;
+
   if (isPreview && sidParam) {
-    return <PreparingScreen />;
+    return <PreparingScreen pageTitle={interviewTitle} />;
   }
 
   if (interview.isLoading) {
@@ -140,7 +142,7 @@ export default function PublicInterviewPage() {
   }
 
   if (storedSessionId && existingSession.isLoading) {
-    return <PreparingScreen />;
+    return <PreparingScreen pageTitle={interviewTitle} />;
   }
 
   return (

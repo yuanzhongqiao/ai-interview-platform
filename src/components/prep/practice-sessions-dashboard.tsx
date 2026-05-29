@@ -37,6 +37,7 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useAppLocale } from "@/components/app-locale-provider";
 import { useToast } from "@/hooks/use-toast";
 import { exportToXlsx } from "@/lib/export-xlsx";
 import { effectivePrepDurationSeconds } from "@/lib/prep/session-duration";
@@ -63,7 +64,7 @@ import {
     X,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { scoreTone } from "./prep-types";
 
 export type PracticeSessionSummary = {
@@ -99,15 +100,6 @@ type SortDir = "asc" | "desc";
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50];
 
-const TIME_RANGE_OPTIONS = [
-  { value: "ALL", label: "All Time" },
-  { value: "1d", label: "Past 1 day" },
-  { value: "3d", label: "Past 3 days" },
-  { value: "7d", label: "Past 7 days" },
-  { value: "14d", label: "Past 14 days" },
-  { value: "30d", label: "Past 30 days" },
-  { value: "90d", label: "Past 90 days" },
-] as const;
 
 function getTimeRangeCutoff(value: string): Date | null {
   const now = Date.now();
@@ -152,17 +144,6 @@ function practiceSessionHref(row: PracticeSessionSummary): string {
   return base;
 }
 
-function practiceSessionActionLabel(row: PracticeSessionSummary): string {
-  if (row.status === "COMPLETED") return "Session completed";
-  return row.status === "IN_PROGRESS" ? "Resume practice" : "Practice again";
-}
-
-function practiceSessionDisabledReason(row: PracticeSessionSummary): string {
-  if (row.status === "COMPLETED") {
-    return "This session is completed and cannot be resumed.";
-  }
-  return practiceSessionActionLabel(row);
-}
 
 function isPracticeSessionActionDisabled(row: PracticeSessionSummary): boolean {
   return row.status === "COMPLETED";
@@ -185,10 +166,6 @@ function statusVariant(
     default:
       return "secondary";
   }
-}
-
-function statusLabel(status: string): string {
-  return status.replace("_", " ");
 }
 
 function getSortValue(row: PracticeSessionSummary, key: SortKey): string | number {
@@ -272,8 +249,8 @@ function Metric({
 }
 
 export function PracticeSessionsDashboard({
-  title = "Practices",
-  subtitle = "Track your interview practice sessions and coaching progress.",
+  title,
+  subtitle,
   rows,
   isLoading,
   showInterviewColumn = true,
@@ -294,8 +271,63 @@ export function PracticeSessionsDashboard({
   primaryAction?: React.ReactNode;
   toolbarAction?: React.ReactNode;
 }) {
+  const { t } = useAppLocale();
   const { toast } = useToast();
   const utils = trpc.useUtils();
+
+  const resolvedTitle = title ?? t("practices.title");
+  const resolvedSubtitle =
+    subtitle ?? t("practices.subtitleDefault");
+
+  const timeRangeOptions = useMemo(
+    () =>
+      [
+        { value: "ALL", label: t("practices.timeAll") },
+        { value: "1d", label: t("practices.time1d") },
+        { value: "3d", label: t("practices.time3d") },
+        { value: "7d", label: t("practices.time7d") },
+        { value: "14d", label: t("practices.time14d") },
+        { value: "30d", label: t("practices.time30d") },
+        { value: "90d", label: t("practices.time90d") },
+      ] as const,
+    [t],
+  );
+
+  const practiceSessionActionLabel = useCallback(
+    (row: PracticeSessionSummary) => {
+      if (row.status === "COMPLETED") return t("practices.actionCompleted");
+      return row.status === "IN_PROGRESS"
+        ? t("practices.actionResume")
+        : t("practices.actionAgain");
+    },
+    [t],
+  );
+
+  const practiceSessionDisabledReason = useCallback(
+    (row: PracticeSessionSummary) => {
+      if (row.status === "COMPLETED") {
+        return t("practices.actionDisabled");
+      }
+      return practiceSessionActionLabel(row);
+    },
+    [practiceSessionActionLabel, t],
+  );
+
+  const statusLabel = useCallback(
+    (status: string) => {
+      switch (status) {
+        case "COMPLETED":
+          return t("practices.statusCompleted");
+        case "IN_PROGRESS":
+          return t("practices.statusInProgress");
+        case "ABANDONED":
+          return t("practices.statusAbandoned");
+        default:
+          return status.replace("_", " ");
+      }
+    },
+    [t],
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [timeRange, setTimeRange] = useState("ALL");
@@ -311,12 +343,19 @@ export function PracticeSessionsDashboard({
       setSelectedIds(new Set());
       utils.prep.listSessions.invalidate();
       toast({
-        title: `${result.deleted} practice ${result.deleted === 1 ? "session" : "sessions"} deleted`,
+        title: t("practices.deletedToast")
+          .replace("{count}", String(result.deleted))
+          .replace(
+            "{unit}",
+            result.deleted === 1
+              ? t("practices.deleteUnitOne")
+              : t("practices.deleteUnitMany"),
+          ),
       });
     },
     onError: (err) => {
       toast({
-        title: "Could not delete practices",
+        title: t("practices.deleteFailed"),
         description: err.message,
         variant: "destructive",
       });
@@ -461,8 +500,8 @@ export function PracticeSessionsDashboard({
       {showHeader ? (
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="text-3xl font-bold">{title}</h1>
-            <p className="text-muted-foreground">{subtitle}</p>
+            <h1 className="text-3xl font-bold">{resolvedTitle}</h1>
+            <p className="text-muted-foreground">{resolvedSubtitle}</p>
           </div>
           {primaryAction}
         </div>
@@ -470,19 +509,19 @@ export function PracticeSessionsDashboard({
 
       {showMetrics ? (
         <div className="grid gap-4 md:grid-cols-4">
-          <Metric icon={BrainCircuit} label="Total Practices" value={metrics.total} />
+          <Metric icon={BrainCircuit} label={t("practices.metricTotal")} value={metrics.total} />
           <Metric
             icon={CheckCircle2}
-            label="Completed"
+            label={t("practices.metricCompleted")}
             value={metrics.completed}
           />
           <Metric
             icon={Sparkles}
-            label="Avg Score"
+            label={t("practices.metricAvgScore")}
             value={
               metrics.averageScore !== null
                 ? `${metrics.averageScore.toFixed(1)}/10`
-                : "N/A"
+                : t("practices.na")
             }
             tone={
               metrics.averageScore !== null
@@ -492,7 +531,7 @@ export function PracticeSessionsDashboard({
           />
           <Metric
             icon={Clock}
-            label="Avg Duration"
+            label={t("practices.metricAvgDuration")}
             value={formatDuration(metrics.averageDuration)}
           />
         </div>
@@ -504,8 +543,8 @@ export function PracticeSessionsDashboard({
           <Input
             placeholder={
               showInterviewColumn
-                ? "Search by interview or status..."
-                : "Search by status..."
+                ? t("practices.searchWithInterview")
+                : t("practices.searchStatus")
             }
             value={searchQuery}
             onChange={(event) => {
@@ -528,7 +567,7 @@ export function PracticeSessionsDashboard({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {TIME_RANGE_OPTIONS.map((option) => (
+            {timeRangeOptions.map((option) => (
               <SelectItem key={option.value} value={option.value}>
                 {option.label}
               </SelectItem>
@@ -548,10 +587,10 @@ export function PracticeSessionsDashboard({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="ALL">All Status</SelectItem>
-            <SelectItem value="COMPLETED">Completed</SelectItem>
-            <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-            <SelectItem value="ABANDONED">Abandoned</SelectItem>
+            <SelectItem value="ALL">{t("practices.statusAll")}</SelectItem>
+            <SelectItem value="COMPLETED">{t("practices.statusCompleted")}</SelectItem>
+            <SelectItem value="IN_PROGRESS">{t("practices.statusInProgress")}</SelectItem>
+            <SelectItem value="ABANDONED">{t("practices.statusAbandoned")}</SelectItem>
           </SelectContent>
         </Select>
 
@@ -561,7 +600,7 @@ export function PracticeSessionsDashboard({
           disabled={processedRows.length === 0}
         >
           <Download className="mr-2 h-4 w-4" />
-          Export
+          {t("practices.export")}
         </Button>
 
         {allowSelection && selectedIds.size > 0 ? (
@@ -576,11 +615,14 @@ export function PracticeSessionsDashboard({
               ) : (
                 <Trash2 className="mr-2 h-4 w-4" />
               )}
-              Delete ({selectedIds.size})
+              {t("practices.delete").replace(
+                "{count}",
+                String(selectedIds.size),
+              )}
             </Button>
             <Button variant="outline" onClick={() => setSelectedIds(new Set())}>
               <X className="mr-2 h-4 w-4" />
-              Cancel
+              {t("practices.cancel")}
             </Button>
           </>
         ) : (
@@ -596,8 +638,8 @@ export function PracticeSessionsDashboard({
         ) : processedRows.length === 0 ? (
           <p className="py-8 text-center text-muted-foreground">
             {isFiltering
-              ? "No practices match your filters."
-              : "No practice sessions yet."}
+              ? t("practices.emptyFiltered")
+              : t("practices.empty")}
           </p>
         ) : (
           <>
@@ -624,7 +666,7 @@ export function PracticeSessionsDashboard({
                             className="inline-flex cursor-pointer select-none items-center gap-1 whitespace-nowrap hover:text-foreground"
                             onClick={() => handleSort("interview")}
                           >
-                            Interview
+                            {t("practices.colInterview")}
                             {sortKey === "interview" ? (
                               sortDir === "asc" ? (
                                 <ArrowUp className="h-3.5 w-3.5" />
@@ -653,56 +695,56 @@ export function PracticeSessionsDashboard({
                       </TableHead>
                     ) : null}
                     <SortableHead
-                      label="Status"
+                      label={t("practices.colStatus")}
                       sortKey="status"
                       activeKey={sortKey}
                       direction={sortDir}
                       onSort={handleSort}
                     />
                     <SortableHead
-                      label="Score"
+                      label={t("practices.colScore")}
                       sortKey="score"
                       activeKey={sortKey}
                       direction={sortDir}
                       onSort={handleSort}
                     />
                     <SortableHead
-                      label="Attempts"
+                      label={t("practices.colAttempts")}
                       sortKey="attempts"
                       activeKey={sortKey}
                       direction={sortDir}
                       onSort={handleSort}
                     />
                     <SortableHead
-                      label="Mode"
+                      label={t("practices.colMode")}
                       sortKey="mode"
                       activeKey={sortKey}
                       direction={sortDir}
                       onSort={handleSort}
                     />
                     <SortableHead
-                      label="Duration"
+                      label={t("practices.colDuration")}
                       sortKey="duration"
                       activeKey={sortKey}
                       direction={sortDir}
                       onSort={handleSort}
                     />
                     <SortableHead
-                      label="Started"
+                      label={t("practices.colStarted")}
                       sortKey="started"
                       activeKey={sortKey}
                       direction={sortDir}
                       onSort={handleSort}
                     />
                     <SortableHead
-                      label="Completed"
+                      label={t("practices.colCompleted")}
                       sortKey="completed"
                       activeKey={sortKey}
                       direction={sortDir}
                       onSort={handleSort}
                     />
                     <TableHead className="whitespace-nowrap text-right">
-                      Action
+                      {t("practices.colAction")}
                     </TableHead>
                   </TableRow>
                 </TableHeader>
@@ -834,7 +876,7 @@ export function PracticeSessionsDashboard({
             {processedRows.length > PAGE_SIZE_OPTIONS[0] && (
               <div className="flex items-center justify-between border-t px-4 py-3">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <span>Rows per page</span>
+                  <span>{t("practices.rowsPerPage")}</span>
                   <select
                     className="rounded border bg-background px-2 py-1 text-sm"
                     value={pageSize}
@@ -890,15 +932,20 @@ export function PracticeSessionsDashboard({
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete practice sessions</AlertDialogTitle>
+            <AlertDialogTitle>{t("practices.deleteTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete {selectedIds.size} practice{" "}
-              {selectedIds.size === 1 ? "session" : "sessions"}? This will
-              permanently remove the selected practice attempts and feedback.
+              {t("practices.deleteDesc")
+                .replace("{count}", String(selectedIds.size))
+                .replace(
+                  "{unit}",
+                  selectedIds.size === 1
+                    ? t("practices.deleteUnitOne")
+                    : t("practices.deleteUnitMany"),
+                )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("practices.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => {
@@ -906,7 +953,7 @@ export function PracticeSessionsDashboard({
                 setConfirmDelete(false);
               }}
             >
-              Delete
+              {t("practices.deleteConfirm")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

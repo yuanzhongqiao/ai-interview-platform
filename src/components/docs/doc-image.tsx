@@ -16,10 +16,10 @@ export function DocImage({
         alt={alt}
         width={1440}
         height={900}
-        className={`w-full h-auto rounded-lg${bordered ? " border border-mk-border" : ""}`}
+        className={`w-full h-auto rounded-lg${bordered ? " border border-border" : ""}`}
         quality={90}
       />
-      <figcaption className="mt-2 text-center text-xs text-mk-text-muted">
+      <figcaption className="mt-2 text-center text-xs text-muted-foreground">
         {alt}
       </figcaption>
     </figure>

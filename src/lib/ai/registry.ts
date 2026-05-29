@@ -10,10 +10,26 @@ function registerProvider(provider: LLMProvider) {
   providers.set(provider.id, provider);
 }
 
-registerProvider(new OpenAIProvider());
-registerProvider(new GeminiProvider());
-registerProvider(new KimiProvider());
-registerProvider(new MinimaxProvider());
+function isConfiguredKey(value: string | undefined): boolean {
+  const trimmed = value?.trim();
+  if (!trimmed) return false;
+  if (trimmed.toLowerCase() === "dummy") return false;
+  return true;
+}
+
+/** Only instantiate providers with valid keys (OpenAI SDK throws on empty apiKey). */
+if (isConfiguredKey(process.env.OPENAI_API_KEY)) {
+  registerProvider(new OpenAIProvider());
+}
+if (isConfiguredKey(process.env.GEMINI_API_KEY)) {
+  registerProvider(new GeminiProvider());
+}
+if (isConfiguredKey(process.env.KIMI_API_KEY)) {
+  registerProvider(new KimiProvider());
+}
+if (isConfiguredKey(process.env.MINIMAX_API_KEY)) {
+  registerProvider(new MinimaxProvider());
+}
 
 /** Resolve the right provider for a given model name or provider id. */
 export function getProvider(idOrModel?: string | null): LLMProvider {
@@ -25,12 +41,14 @@ export function getProvider(idOrModel?: string | null): LLMProvider {
         return p;
       }
     }
+    // Custom model id (e.g. deepseek-v4-flash via OPENAI-compatible API)
+    if (providers.has("openai")) return providers.get("openai")!;
   }
   // Default fallback order: openai → gemini → kimi → minimax
-  if (process.env.OPENAI_API_KEY) return providers.get("openai")!;
-  if (process.env.GEMINI_API_KEY) return providers.get("gemini")!;
-  if (process.env.KIMI_API_KEY) return providers.get("kimi")!;
-  if (process.env.MINIMAX_API_KEY) return providers.get("minimax")!;
+  if (providers.has("openai")) return providers.get("openai")!;
+  if (providers.has("gemini")) return providers.get("gemini")!;
+  if (providers.has("kimi")) return providers.get("kimi")!;
+  if (providers.has("minimax")) return providers.get("minimax")!;
   throw new Error("No LLM provider configured. Set OPENAI_API_KEY, GEMINI_API_KEY, KIMI_API_KEY, or MINIMAX_API_KEY.");
 }
 
@@ -42,24 +60,28 @@ export function listProviders(): LLMProvider[] {
  * Model used for post-interview report generation.
  * Falls back through available providers.
  */
-export const REPORT_MODEL = process.env.OPENAI_API_KEY
-  ? "gpt-4o"
-  : process.env.GEMINI_API_KEY
-    ? "gemini-3.1-flash-lite"
-    : process.env.KIMI_API_KEY
-      ? "kimi-k2.5"
-      : "MiniMax-M2.1-lightning";
+export const REPORT_MODEL =
+  process.env.AI_REPORT_MODEL?.trim() ||
+  (isConfiguredKey(process.env.OPENAI_API_KEY)
+    ? "gpt-4o"
+    : isConfiguredKey(process.env.GEMINI_API_KEY)
+      ? "gemini-3.1-flash-lite"
+      : isConfiguredKey(process.env.KIMI_API_KEY)
+        ? "kimi-k2.5"
+        : "MiniMax-M2.1-lightning");
 
 /**
  * Model used for interview question generation and refinement.
  */
-export const GENERATOR_MODEL = process.env.OPENAI_API_KEY
-  ? "gpt-4o-mini"
-  : process.env.GEMINI_API_KEY
-    ? "gemini-3.1-flash-lite"
-    : process.env.KIMI_API_KEY
-      ? "moonshot-v1-8k"
-      : "MiniMax-M2.1-lightning";
+export const GENERATOR_MODEL =
+  process.env.AI_GENERATOR_MODEL?.trim() ||
+  (isConfiguredKey(process.env.OPENAI_API_KEY)
+    ? "gpt-4o-mini"
+    : isConfiguredKey(process.env.GEMINI_API_KEY)
+      ? "gemini-3.1-flash-lite"
+      : isConfiguredKey(process.env.KIMI_API_KEY)
+        ? "moonshot-v1-8k"
+        : "MiniMax-M2.1-lightning");
 
 export const PRIMARY_GENERATOR_MODEL = GENERATOR_MODEL;
 

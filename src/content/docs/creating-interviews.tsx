@@ -1,14 +1,31 @@
-import { DocCallout } from "@/components/docs/doc-callout";
+﻿import { DocCallout } from "@/components/docs/doc-callout";
 import { DocFeature, DocFeatureGrid } from "@/components/docs/doc-feature-grid";
 import { DocImage } from "@/components/docs/doc-image";
 import { DocStep, DocSteps } from "@/components/docs/doc-steps";
 import type { DocArticle } from "./types";
+import {
+  antiCheatingContentJa,
+  creatingAnInterviewContentJa,
+  interviewSettingsContentJa,
+  questionsAndLibraryContentJa,
+} from "./ja/creating-interviews";
+import {
+  antiCheatingContentZh,
+  creatingAnInterviewContentZh,
+  interviewSettingsContentZh,
+  questionsAndLibraryContentZh,
+} from "./zh/creating-interviews";
+
 export const creatingInterviewsArticles: DocArticle[] = [
   {
     slug: "creating-an-interview",
     categorySlug: "creating-interviews",
     title: "Creating an Interview",
+    titleZh: "创建面试",
+    titleJa: "面接の作成",
     description: "Use the AI generator or build manually with title, channels, and questions",
+    descriptionZh: "使用 AI 生成器或手动设置标题、渠道与题目",
+    descriptionJa: "AI ジェネレーターまたは手動でタイトル・チャネル・問題を設定",
     audience: "creators",
     order: 1,
     content: () => (
@@ -63,12 +80,18 @@ export const creatingInterviewsArticles: DocArticle[] = [
         <DocImage src="/images/docs/interview-edit-content.webp" alt="Question editor showing questions with types like Open Ended, Coding, and Multiple Choice" />
       </>
     ),
+    contentZh: creatingAnInterviewContentZh,
+    contentJa: creatingAnInterviewContentJa,
   },
   {
     slug: "interview-settings",
     categorySlug: "creating-interviews",
     title: "Interview Settings",
+    titleZh: "面试设置",
+    titleJa: "面接設定",
     description: "Shareable link, general options, AI tone, follow-up depth, and language",
+    descriptionZh: "可分享链接、常规选项、AI 语气、追问深度与语言",
+    descriptionJa: "共有可能リンク、一般設定、AI トーン、フォローアップ、言語",
     audience: "creators",
     order: 2,
     content: () => (
@@ -145,17 +168,23 @@ export const creatingInterviewsArticles: DocArticle[] = [
 
         <h3>Language</h3>
         <p>
-          The AI conducts the session and evaluates responses in the selected language. Currently supported: <strong>English</strong> and <strong>Chinese (中文)</strong>.
+          The AI conducts the session and evaluates responses in the selected language.           Currently supported: <strong>English</strong>, <strong>Chinese (中文)</strong>, <strong>Japanese (日本語)</strong>, and more.
         </p>
       </>
     ),
+    contentZh: interviewSettingsContentZh,
+    contentJa: interviewSettingsContentJa,
   },
   {
     slug: "anti-cheating",
     categorySlug: "creating-interviews",
     title: "Anti-Cheating Mode",
+    titleZh: "防作弊模式",
+    titleJa: "不正防止モード",
     description:
       "Prevent dishonest behavior with tab tracking, paste blocking, and multi-monitor detection",
+    descriptionZh: "通过标签页跟踪、阻止粘贴与多显示器检测防止作弊",
+    descriptionJa: "タブ追跡、ペーストブロック、複数モニター検出による不正防止",
     audience: "both",
     order: 3,
     content: () => (
@@ -270,12 +299,18 @@ export const creatingInterviewsArticles: DocArticle[] = [
         </DocCallout>
       </>
     ),
+    contentZh: antiCheatingContentZh,
+    contentJa: antiCheatingContentJa,
   },
   {
     slug: "questions-and-library",
     categorySlug: "creating-interviews",
     title: "Questions and Library",
+    titleZh: "题目与题库",
+    titleJa: "問題とライブラリ",
     description: "Question types, reusable library, and search",
+    descriptionZh: "题型说明、可复用题库与搜索",
+    descriptionJa: "問題形式、再利用可能なライブラリ、検索",
     audience: "creators",
     order: 4,
     content: () => (
@@ -336,5 +371,7 @@ export const creatingInterviewsArticles: DocArticle[] = [
         </DocCallout>
       </>
     ),
+    contentZh: questionsAndLibraryContentZh,
+    contentJa: questionsAndLibraryContentJa,
   },
 ];

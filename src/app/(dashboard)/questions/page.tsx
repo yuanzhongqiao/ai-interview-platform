@@ -210,7 +210,7 @@ function getSortValue(q: QuestionRow, key: SortKey): string | number {
 /* ------------------------------------------------------------------ */
 
 export default function QuestionsPage() {
-  const { locale } = useAppLocale();
+  const { locale, t } = useAppLocale();
   const { toast } = useToast();
   const utils = trpc.useUtils();
   const { currentProject } = useProject();
@@ -454,8 +454,8 @@ export default function QuestionsPage() {
     <div className="space-y-4">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold">{isZh ? "题库" : "Questions"}</h1>
-        <p className="text-muted-foreground">
+        <h1 className="page-title">{t("header.questions")}</h1>
+        <p className="page-subtitle">
           {isZh
             ? "查看所有面试中的题目"
             : "All questions across your interviews"}

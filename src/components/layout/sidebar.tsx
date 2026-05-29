@@ -6,7 +6,8 @@ import { TourCelebration } from "@/components/tour/tour-celebration";
 import { TourOverlay } from "@/components/tour/tour-overlay";
 import { TourProvider } from "@/components/tour/tour-provider";
 import { TourWelcome } from "@/components/tour/tour-welcome";
-import { AuralLogo } from "@/components/ui/aural-logo";
+import { BrandMark } from "@/components/ui/brand-mark";
+import { OPEN_SOURCE_COMMUNITY_URL } from "@/lib/brand";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,9 +31,12 @@ import {
     Loader2,
     LogOut,
     MessageSquare,
+    MessageCircle,
     Monitor,
     Moon,
     Palette,
+    Info,
+    Globe,
     PanelLeftClose,
     PanelLeftOpen,
     PlayCircle,
@@ -118,10 +122,10 @@ function SidebarLink({
         });
       }}
       className={cn(
-        "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+        "relative flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
         active
-          ? "bg-primary/10 text-primary"
-          : "text-muted-foreground hover:bg-muted hover:text-foreground",
+          ? "bg-sidebar-accent text-primary before:absolute before:left-0 before:top-1/2 before:h-5 before:w-0.5 before:-translate-y-1/2 before:rounded-full before:bg-primary"
+          : "text-muted-foreground hover:bg-sidebar-accent/60 hover:text-foreground",
       )}
     >
       {navigating ? (
@@ -159,9 +163,20 @@ export function Sidebar({
   const projectNavigation = [
     { name: t("sidebar.dashboard"), href: "/dashboard", icon: LayoutDashboard },
     { name: t("sidebar.interviews"), href: "/interviews", icon: MessageSquare },
-    { name: "Practices", href: "/practices", icon: BrainCircuit },
+    { name: t("header.practices"), href: "/practices", icon: BrainCircuit },
     { name: t("sidebar.sessions"), href: "/candidates", icon: PlayCircle },
     { name: t("sidebar.questions"), href: "/questions", icon: HelpCircle },
+    { name: t("sidebar.aiChat"), href: "/ai-chat", icon: MessageCircle },
+    { name: t("sidebar.about"), href: "/about", icon: Info },
+  ];
+
+  const externalNav = [
+    {
+      name: t("sidebar.openSource"),
+      href: OPEN_SOURCE_COMMUNITY_URL,
+      icon: Globe,
+      external: true,
+    },
   ];
 
   useEffect(() => {
@@ -186,19 +201,14 @@ export function Sidebar({
   return (
     <aside
       className={cn(
-        "flex flex-col border-r bg-background transition-all duration-200",
+        "flex flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-all duration-200",
         collapsed ? "w-16" : "w-52",
       )}
     >
       {/* Logo */}
-      <div className="flex h-14 items-center border-b px-4">
+      <div className="flex h-14 items-center border-b border-sidebar-border px-4">
         <Link href="/organizations" className="flex items-center gap-1">
-          <AuralLogo size={28} className="shrink-0" />
-          {!collapsed && (
-            <span className="font-heading text-base font-bold tracking-[2px]">
-              AURAL
-            </span>
-          )}
+          <BrandMark size={28} showName={!collapsed} />
         </Link>
       </div>
 
@@ -242,7 +252,7 @@ export function Sidebar({
           <div className="p-3">
             <Button
               className={cn(
-                "w-full gap-2",
+                "w-full gap-2 shadow-sm",
                 collapsed ? "justify-center" : "justify-start",
               )}
               size={collapsed ? "icon" : "default"}
@@ -274,6 +284,23 @@ export function Sidebar({
                 collapsed={collapsed}
               />
             ))}
+            {externalNav.map((item) =>
+              item.external ? (
+                <a
+                  key={item.name}
+                  href={item.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={item.name}
+                  className={cn(
+                    "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+                  )}
+                >
+                  <item.icon className="h-4 w-4 shrink-0" />
+                  {!collapsed && item.name}
+                </a>
+              ) : null,
+            )}
           </nav>
 
           {/* Bottom section: Settings + Support */}
@@ -319,7 +346,7 @@ export function Sidebar({
       <SupportDrawer open={supportOpen} onOpenChange={setSupportOpen} />
 
       {/* User profile */}
-      <div className="border-t">
+      <div className="border-t border-sidebar-border">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
@@ -450,7 +477,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 />
               }
             />
-            <main className="flex-1 overflow-y-auto p-6 code-scrollbar">
+            <main className="flex-1 overflow-y-auto bg-background/80 p-6 code-scrollbar">
               {children}
             </main>
           </div>

@@ -14,10 +14,14 @@ function pushUnique(chain: string[], model: string) {
 /** Generator model chain for OSS builds: OpenAI first, then configured fallbacks. */
 export function getGeneratorModelChain(): string[] {
   const chain: string[] = [];
-  if (process.env.OPENAI_API_KEY?.trim()) {
-    pushUnique(chain, "gpt-4o-mini");
+  const override = process.env.AI_GENERATOR_MODEL?.trim();
+  if (override) {
+    pushUnique(chain, override);
   }
-  if (process.env.GEMINI_API_KEY?.trim()) {
+  if (process.env.OPENAI_API_KEY?.trim()) {
+    pushUnique(chain, override ?? "gpt-4o-mini");
+  }
+  if (process.env.GEMINI_API_KEY?.trim() && process.env.GEMINI_API_KEY.toLowerCase() !== "dummy") {
     pushUnique(chain, "gemini-3.1-flash-lite");
   }
   if (process.env.KIMI_API_KEY?.trim()) {

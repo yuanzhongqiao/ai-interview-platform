@@ -1,5 +1,6 @@
 "use client";
 
+import { useAppLocale } from "@/components/app-locale-provider";
 import { useProject } from "@/components/project-provider";
 import {
   PracticeSessionsDashboard,
@@ -9,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc/client";
 
 export default function PracticesPage() {
+  const { t } = useAppLocale();
   const { currentProject, isLoading: projectLoading } = useProject();
   const projectId = currentProject?.id;
   const practices = trpc.prep.listSessions.useQuery(
@@ -25,14 +27,14 @@ export default function PracticesPage() {
     );
   }
 
+  const subtitle = currentProject
+    ? t("practices.subtitleProject").replace("{name}", currentProject.name)
+    : t("practices.subtitleDefault");
+
   return (
     <PracticeSessionsDashboard
-      title="Practices"
-      subtitle={
-        currentProject
-          ? `Review coaching practice runs across interviews in ${currentProject.name}.`
-          : "Review coaching practice runs across your accessible interviews."
-      }
+      title={t("practices.title")}
+      subtitle={subtitle}
       rows={(practices.data?.sessions ?? []) as PracticeSessionSummary[]}
       isLoading={practices.isLoading}
       showMetrics={false}

@@ -32,6 +32,151 @@ const COMP_GZIP = 0b0001;
 
 export const BIGMODEL_ASR_URL = "wss://openspeech.bytedance.com/api/v3/sauc/bigmodel";
 
+/** Allowed X-Api-Resource-Id values per https://www.volcengine.com/docs/6561/1354869 */
+export const ALLOWED_ASR_RESOURCE_IDS = [
+  "volc.seedasr.sauc.duration",
+  "volc.seedasr.sauc.concurrent",
+  "volc.bigasr.sauc.duration",
+  "volc.bigasr.sauc.concurrent",
+] as const;
+
+export type AsrResourceId = (typeof ALLOWED_ASR_RESOURCE_IDS)[number];
+
+/**
+ * Maps DOUBAO_ASR_RESOURCE_ID to a valid API resource id.
+ * Console instance names (e.g. Doubao_Seed_ASR_Streaming_2.0…) must NOT be used here.
+ */
+export function resolveAsrResourceId(
+  raw?: string,
+  onWarn?: (message: string) => void,
+): AsrResourceId {
+  const trimmed = (raw || "").trim();
+  const fallback: AsrResourceId = "volc.seedasr.sauc.duration";
+  if (!trimmed) return fallback;
+  if ((ALLOWED_ASR_RESOURCE_IDS as readonly string[]).includes(trimmed)) {
+    return trimmed as AsrResourceId;
+  }
+  onWarn?.(
+    `DOUBAO_ASR_RESOURCE_ID="${trimmed}" is not a valid API resource id ` +
+      `(use volc.seedasr.sauc.duration for 豆包流式语音识别 2.0 小时版; ` +
+      `do not paste the console instance id). Falling back to ${fallback}.`,
+  );
+  return fallback;
+}
+
+export function isAsr20ResourceId(resourceId: string): boolean {
+  return resourceId.includes("seedasr");
+}
+
+/** Volc BigModel SERVER_ACK (0b1011). */
+export const ASR_MSG_SERVER_ACK = SERVER_ACK;
+
+/** Business codes that mean success in ASR JSON / ACK payloads. */
+export function isAsrBusinessCodeOk(code?: number): boolean {
+  return code == null || code === 0 || code === 1000 || code === 20000000;
+}
+
+/**
+ * ASR 2.0-only request fields (enable_nonstream, ssd_version) break recognition on
+ * volc.bigasr.* (ASR 1.0). Strip them unless resource id is seedasr.
+ */
+export function finalizeBigModelAsrConfig(
+  resourceId: string,
+  config: BigModelAsrConfig,
+): BigModelAsrConfig {
+  const out: BigModelAsrConfig = { ...config };
+  if (isAsr20ResourceId(resourceId)) {
+    out.enableNonstream = true;
+    out.ssdVersion = "200";
+    if (out.enableDdc === undefined) out.enableDdc = true;
+  } else {
+    delete out.enableNonstream;
+    delete out.ssdVersion;
+    if (out.enableDdc === undefined) out.enableDdc = false;
+  }
+  return out;
+}
+
+/**
+ * API Key for ASR `X-Api-Key` (新版控制台).
+ * Prefer DOUBAO_ASR_API_KEY from 控制台 → API Key 管理 — NOT 实例页 Secret Key.
+ * @see https://www.volcengine.com/docs/6561/1816214
+ */
+export function resolveAsrApiKey(env: {
+  asrApiKey?: string;
+  apiKey?: string;
+}): { key: string; source: "DOUBAO_ASR_API_KEY" | "DOUBAO_API_KEY" | "" } {
+  const dedicated = (env.asrApiKey || "").trim();
+  if (dedicated) return { key: dedicated, source: "DOUBAO_ASR_API_KEY" };
+  const fallback = (env.apiKey || "").trim();
+  if (fallback) return { key: fallback, source: "DOUBAO_API_KEY" };
+  return { key: "", source: "" };
+}
+
+/**
+ * Choose ASR handshake auth per https://www.volcengine.com/docs/6561/1354869
+ * - 新版控制台 + ASR 2.0: X-Api-Key (API Key 管理) only
+ * - 旧版控制台 / ASR 1.0: X-Api-App-Key + X-Api-Access-Key
+ */
+export function resolveAsrAuthMode(input: {
+  authMode?: string;
+  resourceId: string;
+  apiKey?: string;
+  appId?: string;
+  accessToken?: string;
+}): "api_key" | "app_token" {
+  const authMode = (input.authMode || "auto").trim().toLowerCase();
+  const apiKey = (input.apiKey || "").trim();
+  const appId = (input.appId || "").trim();
+  const accessToken = (input.accessToken || "").trim();
+  const hasAppPair = !!(appId && accessToken);
+  const isAsr20 = isAsr20ResourceId(input.resourceId);
+
+  if (authMode === "api_key") return apiKey ? "api_key" : "app_token";
+  if (authMode === "app_token") return "app_token";
+
+  if (isAsr20 && apiKey) return "api_key";
+  if (!hasAppPair && apiKey) return "api_key";
+  return "app_token";
+}
+
+/** Actionable hint after failed WebSocket handshake. */
+export function formatAsrHandshakeHint(
+  statusCode: number,
+  body: string,
+  opts: { resourceId: string; authMode: "api_key" | "app_token" },
+): string {
+  const snippet = body.slice(0, 200);
+  const lines = [`HTTP ${statusCode} — ${snippet}`];
+
+  if (
+    statusCode === 400 &&
+    snippet.includes("not allowed") &&
+    opts.authMode === "app_token" &&
+    isAsr20ResourceId(opts.resourceId)
+  ) {
+    lines.push(
+      "→ 新版控制台 + ASR 2.0 不能用 AppId+AccessToken；请设 DOUBAO_ASR_AUTH=api_key，" +
+        "DOUBAO_ASR_API_KEY=控制台「API Key 管理」中的密钥",
+    );
+    lines.push("→ 文档: https://www.volcengine.com/docs/6561/1354869");
+  } else if (statusCode === 401 && opts.authMode === "api_key") {
+    lines.push(
+      "→ X-Api-Key 无效：在豆包语音控制台「API Key 管理」创建/复制 API Key 到 DOUBAO_ASR_API_KEY",
+    );
+    lines.push(
+      "→ 实例详情里的 Secret Key ≠ API Key；App ID / Access Token 也不能作为 X-Api-Key",
+    );
+    lines.push("→ 文档: https://www.volcengine.com/docs/6561/1816214");
+  } else if (statusCode === 403 && snippet.includes("not granted")) {
+    lines.push(
+      "→ 账号未开通该资源：在控制台开通豆包流式语音识别 2.0 小时版，或改用 volc.bigasr.sauc.duration（仅 1.0）",
+    );
+  }
+
+  return lines.join("\n");
+}
+
 export interface BigModelAsrConfig {
   language?: string;
   format?: string;
@@ -59,6 +204,9 @@ export function resolveBigModelAsrLanguage(language?: string): string | undefine
   if (normalized.startsWith("english") || normalized === "en" || normalized.startsWith("en-")) {
     return "en-US";
   }
+  if (normalized.startsWith("ja") || normalized.includes("japanese") || normalized.includes("日本語")) {
+    return "ja-JP";
+  }
   return undefined;
 }
 
@@ -70,7 +218,7 @@ export function buildBigModelHeaders(
   apiKey?: string,
 ): Record<string, string> {
   const headers: Record<string, string> = {
-    "X-Api-Resource-Id": resourceId || "volc.bigasr.sauc.duration",
+    "X-Api-Resource-Id": resourceId || "volc.seedasr.sauc.duration",
     "X-Api-Request-Id": reqid,
     "X-Api-Connect-Id": randomUUID(),
   };

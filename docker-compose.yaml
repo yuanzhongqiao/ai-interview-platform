@@ -1,0 +1,70 @@
+# 聆悟 · 全量 Docker 部署（线上 Supabase，无需本地 supabase start）
+#
+# 前置：配置 .env.local（Supabase、DATABASE_URL、LLM、豆包语音等）
+# 变量插值：pnpm run docker:full 会自动加载 .env.local
+# 手动启动：docker compose --env-file .env.local up -d --build
+#
+# 启动：pnpm run docker:full
+# 访问：http://localhost:4010  语音中继：ws://localhost:4011
+
+name: lingwu
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # 国内拉取 node 基础镜像慢时可取消下行注释
+        # NODE_IMAGE: docker.m.daocloud.io/library/node:20-alpine
+        NPM_REGISTRY: https://registry.npmmirror.com
+        APK_MIRROR: mirrors.aliyun.com
+        SUPABASE_URL: ${SUPABASE_URL}
+        SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:4010}
+        NEXT_PUBLIC_VOICE_RELAY_URL: ${NEXT_PUBLIC_VOICE_RELAY_URL:-ws://localhost:4011}
+        NEXT_PUBLIC_OPENAI_VOICE_RELAY_URL: ${NEXT_PUBLIC_OPENAI_VOICE_RELAY_URL:-ws://localhost:8767}
+        NEXT_PUBLIC_VOICE_RELAY_PRIMARY: ${NEXT_PUBLIC_VOICE_RELAY_PRIMARY:-voice}
+        NEXT_PUBLIC_BRAND_NAME: ${NEXT_PUBLIC_BRAND_NAME:-聆悟}
+        NEXT_PUBLIC_BRAND_NAME_EN: ${NEXT_PUBLIC_BRAND_NAME_EN:-Lingwu}
+        NEXT_PUBLIC_BRAND_MARK: ${NEXT_PUBLIC_BRAND_MARK:-聆悟}
+        NEXT_SERVER_ACTIONS_ENCRYPTION_KEY: ${NEXT_SERVER_ACTIONS_ENCRYPTION_KEY}
+    container_name: lingwu-web
+    ports:
+      - "4010:3000"
+    env_file:
+      - .env.local
+    environment:
+      NODE_ENV: production
+    depends_on:
+      voice-relay:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - lingwu-network
+
+  voice-relay:
+    build:
+      context: .
+      dockerfile: Dockerfile.voice-relay
+      args:
+        # NODE_IMAGE: docker.m.daocloud.io/library/node:20-alpine
+        NPM_REGISTRY: https://registry.npmmirror.com
+        APK_MIRROR: mirrors.aliyun.com
+    container_name: lingwu-voice-relay
+    ports:
+      - "4011:8766"
+    env_file:
+      - .env.local
+    environment:
+      VOICE_RELAY_PORT: "8766"
+      NODE_ENV: production
+    restart: unless-stopped
+    networks:
+      - lingwu-network
+
+networks:
+  lingwu-network:
+    name: lingwu-network

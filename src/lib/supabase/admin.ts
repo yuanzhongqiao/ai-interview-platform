@@ -29,8 +29,13 @@ async function fetchWithRetry(
  * on relation joins (our manual types don't define Relationships yet).
  * Regenerate types with `npm run db:types` after schema changes for full safety.
  */
+const supabaseUrl =
+  process.env.SUPABASE_URL?.trim() ||
+  process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() ||
+  "";
+
 export const supabaseAdmin = createClient(
-  process.env.SUPABASE_URL!,
+  supabaseUrl,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
   {
     auth: {

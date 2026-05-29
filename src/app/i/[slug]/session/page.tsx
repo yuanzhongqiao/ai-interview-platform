@@ -9,6 +9,7 @@ import { IntervieweeTourProvider } from "@/components/session/interviewee-tour-p
 import { PreparingScreen } from "@/components/session/preparing-screen";
 import { Card, CardContent } from "@/components/ui/card";
 import type { InterviewContext } from "@/hooks/use-voice";
+import { getIntervieweeUi } from "@/lib/i18n/interviewee-ui";
 import { trpc } from "@/lib/trpc/client";
 import { CheckCircle2 } from "lucide-react";
 import dynamic from "next/dynamic";
@@ -71,22 +72,20 @@ export default function SlugSessionPage() {
   }
 
   if (session.data.status === "COMPLETED" || completed) {
+    const doneUi = getIntervieweeUi(interview.data?.language);
     try { localStorage.removeItem(STORAGE_PREFIX + slug); } catch { /* noop */ }
     return (
       <div className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
         <Card className="w-full max-w-md">
           <CardContent className="py-12 text-center">
             <CheckCircle2 className="mx-auto h-16 w-16 text-secondary-500" />
-            <h2 className="mt-4 text-2xl font-bold">Thank you!</h2>
+            <h2 className="mt-4 text-2xl font-bold">{doneUi.thankYou}</h2>
             {completionReason === "TIME_LIMIT_EXCEEDED" && (
               <p className="mt-2 text-sm text-amber-600">
-                The session time limit has been reached and the interview was ended automatically.
+                {doneUi.timeLimitEnded}
               </p>
             )}
-            <p className="mt-2 text-muted-foreground">
-              Your interview has been completed successfully. We appreciate your
-              time and thoughtful responses.
-            </p>
+            <p className="mt-2 text-muted-foreground">{doneUi.completedBody}</p>
           </CardContent>
         </Card>
       </div>
@@ -158,7 +157,7 @@ export default function SlugSessionPage() {
     };
 
     return (
-      <IntervieweeTourProvider mode={mode}>
+      <IntervieweeTourProvider mode={mode} language={interview.data.language}>
         <PreviewWrapper onReady={handleTourReady}>
           {mode === "voice" ? (
             <VoiceInterface

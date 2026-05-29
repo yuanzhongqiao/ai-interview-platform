@@ -14,9 +14,9 @@ export function DocLink({
     <Link
       href={href}
       {...(isExternal ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-      className="inline-flex items-center gap-0.5 text-mk-terracotta hover:underline underline-offset-2"
+      className="inline-flex items-center gap-0.5 text-primary hover:underline underline-offset-2"
     >
-      <code className="bg-mk-terracotta/10 px-1.5 py-0.5 rounded text-sm font-mono text-mk-terracotta">
+      <code className="bg-primary/10 px-1.5 py-0.5 rounded text-sm font-mono text-primary">
         {children}
       </code>
     </Link>

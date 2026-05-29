@@ -16,11 +16,11 @@ export function DocFeature({
   children: ReactNode;
 }) {
   return (
-    <div className="rounded-lg border border-mk-border bg-white p-5">
-      <h4 className="font-heading font-semibold text-mk-text text-sm mb-2">
+    <div className="rounded-lg border border-border bg-card p-5">
+      <h4 className="font-heading font-semibold text-foreground text-sm mb-2">
         {title}
       </h4>
-      <div className="text-sm text-mk-text-secondary leading-relaxed">
+      <div className="text-sm text-muted-foreground leading-relaxed">
         {children}
       </div>
     </div>

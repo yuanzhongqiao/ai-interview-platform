@@ -1,28 +1,41 @@
-import type { Audience } from "@/content/docs/types";
+"use client";
 
-const config: Record<Audience, { label: string; className: string }> = {
+import type { Audience } from "@/content/docs/types";
+import { useAppLocale } from "@/components/app-locale-provider";
+import { getDocsUi } from "@/lib/i18n/docs-ui";
+import { cn } from "@/lib/utils";
+
+const styles: Record<
+  Audience,
+  { className: string; label: (ui: ReturnType<typeof getDocsUi>) => string }
+> = {
   creators: {
-    label: "For Creators",
-    className:
-      "bg-mk-terracotta/10 text-mk-terracotta border-mk-terracotta/20",
+    className: "bg-primary/10 text-primary border-primary/20",
+    label: (ui) => ui.audienceCreators(),
   },
   interviewees: {
-    label: "For Interviewees",
-    className: "bg-mk-info/10 text-mk-info border-mk-info/20",
+    className: "bg-accent/10 text-accent border-accent/30",
+    label: (ui) => ui.audienceInterviewees(),
   },
   both: {
-    label: "For Everyone",
-    className: "bg-mk-success/10 text-mk-success border-mk-success/20",
+    className: "bg-secondary text-secondary-foreground border-border",
+    label: (ui) => ui.audienceBoth(),
   },
 };
 
 export function AudienceBadge({ audience }: { audience: Audience }) {
-  const { label, className } = config[audience];
+  const { locale } = useAppLocale();
+  const ui = getDocsUi(locale);
+  const style = styles[audience];
+
   return (
     <span
-      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold tracking-wide ${className}`}
+      className={cn(
+        "inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+        style.className,
+      )}
     >
-      {label}
+      {style.label(ui)}
     </span>
   );
 }

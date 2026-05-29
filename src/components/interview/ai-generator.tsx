@@ -1,5 +1,6 @@
 "use client";
 
+import { useAppLocale } from "@/components/app-locale-provider";
 import { QUESTION_TYPE_STYLES, QuestionCard } from "@/components/interview/question-card";
 import { useOrg } from "@/components/org-provider";
 import { AiButton } from "@/components/ui/ai-button";
@@ -43,9 +44,9 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { useLocalizedConstants } from "@/hooks/use-localized-constants";
 import { useToast } from "@/hooks/use-toast";
 import type { AssessmentCriterion, GeneratedInterview, GeneratedQuestion } from "@/lib/ai/types";
-import { AI_TONES, FOLLOW_UP_DEPTHS, LANGUAGES } from "@/lib/constants";
 import { trpc } from "@/lib/trpc/client";
 import { cn } from "@/lib/utils";
 import {
@@ -90,7 +91,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 type PromptSegment = string | { text: string; highlight: true };
 
 interface PromptTemplate {
-  label: string;
+  labelKey: string;
   icon: React.ElementType;
   segments: PromptSegment[];
 }
@@ -161,7 +162,7 @@ const h = (text: string): { text: string; highlight: true } => ({
 
 const PROMPT_TEMPLATES: PromptTemplate[] = [
   {
-    label: "Tech Hiring",
+    labelKey: "aiGen.template.techHiring",
     icon: Code2,
     segments: [
       "Assess ",
@@ -176,7 +177,7 @@ const PROMPT_TEMPLATES: PromptTemplate[] = [
     ],
   },
   {
-    label: "Behavioral",
+    labelKey: "aiGen.template.behavioral",
     icon: Users,
     segments: [
       "Conduct a ",
@@ -191,7 +192,7 @@ const PROMPT_TEMPLATES: PromptTemplate[] = [
     ],
   },
   {
-    label: "User Research",
+    labelKey: "aiGen.template.userResearch",
     icon: Search,
     segments: [
       "Conduct ",
@@ -206,7 +207,7 @@ const PROMPT_TEMPLATES: PromptTemplate[] = [
     ],
   },
   {
-    label: "Screening Call",
+    labelKey: "aiGen.template.screening",
     icon: Briefcase,
     segments: [
       "Design a ",
@@ -221,7 +222,7 @@ const PROMPT_TEMPLATES: PromptTemplate[] = [
     ],
   },
   {
-    label: "Case Study",
+    labelKey: "aiGen.template.caseStudy",
     icon: BrainCircuit,
     segments: [
       "Design a ",
@@ -234,7 +235,7 @@ const PROMPT_TEMPLATES: PromptTemplate[] = [
     ],
   },
   {
-    label: "Expert Interview",
+    labelKey: "aiGen.template.expert",
     icon: MessageSquareText,
     segments: [
       "Conduct an ",
@@ -255,6 +256,8 @@ const PROMPT_TEMPLATES: PromptTemplate[] = [
 export function AIGenerator({ projectId }: { projectId?: string } = {}) {
   const router = useRouter();
   const { toast } = useToast();
+  const { t } = useAppLocale();
+  const { languages, tones, followUpDepths } = useLocalizedConstants();
   const { currentOrg } = useOrg();
   const [description, setDescription] = useState("");
   const [activeTemplate, setActiveTemplate] = useState<number | null>(null);
@@ -444,7 +447,7 @@ export function AIGenerator({ projectId }: { projectId?: string } = {}) {
         body: JSON.stringify({
           description,
           durationMinutes: Number(duration) || 20,
-          language: LANGUAGES.find((l) => l.value === language)?.label ?? language,
+          language: languages.find((l) => l.value === language)?.label ?? language,
           organizationId: currentOrg?.id,
           projectId,
           ...(jdText && { jobDescription: jdText }),
@@ -495,7 +498,7 @@ export function AIGenerator({ projectId }: { projectId?: string } = {}) {
             questions: editableQuestions.map((q) => ({ text: q.text, type: q.type })),
           },
           feedback,
-          language: LANGUAGES.find((l) => l.value === language)?.label ?? language,
+          language: languages.find((l) => l.value === language)?.label ?? language,
           organizationId: currentOrg?.id,
           projectId,
           ...(jdText && { jobDescription: jdText }),
@@ -673,16 +676,13 @@ export function AIGenerator({ projectId }: { projectId?: string } = {}) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5" />
-            AI Interview Generator
+            {t("aiGen.title")}
           </CardTitle>
-          <CardDescription>
-            Describe your goal in natural language and AI will create a complete
-            interview structure for you.
-          </CardDescription>
+          <CardDescription>{t("aiGen.subtitle")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2" data-tour="interview-prompt">
-            <Label htmlFor="ai-description">What kind of interview do you need?</Label>
+            <Label htmlFor="ai-description">{t("aiGen.promptLabel")}</Label>
             {(() => {
               const segments = hlRanges.length ? segmentsFromRanges(description, hlRanges) : null;
               const hasHL = segments?.some((s) => typeof s !== "string") ?? false;
@@ -744,7 +744,7 @@ export function AIGenerator({ projectId }: { projectId?: string } = {}) {
                     <div className="relative">
                       <Textarea
                         id="ai-description"
-                        placeholder="e.g. I want to assess senior React developers for our fintech startup, focusing on system design and problem-solving skills..."
+                        placeholder={t("aiGen.promptPlaceholder")}
                         value={description}
                         onChange={(e) => {
                           const next = e.target.value;
@@ -883,9 +883,9 @@ export function AIGenerator({ projectId }: { projectId?: string } = {}) {
 
                   </div>
                   <div className="flex flex-wrap gap-1.5">
-                    {PROMPT_TEMPLATES.map((t, i) => (
+                    {PROMPT_TEMPLATES.map((tpl, i) => (
                       <button
-                        key={t.label}
+                        key={tpl.labelKey}
                         type="button"
                         className={cn(
                           "inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors",
@@ -894,15 +894,15 @@ export function AIGenerator({ projectId }: { projectId?: string } = {}) {
                             : "border-border text-muted-foreground hover:border-primary/40 hover:text-foreground",
                         )}
                         onClick={() => {
-                          const text = templateToText(t.segments);
+                          const text = templateToText(tpl.segments);
                           setDescription(text);
                           prevDescRef.current = text;
                           setActiveTemplate(i);
-                          setHlRanges(rangesFromSegments(t.segments));
+                          setHlRanges(rangesFromSegments(tpl.segments));
                         }}
                       >
-                        <t.icon className="h-3 w-3" />
-                        {t.label}
+                        <tpl.icon className="h-3 w-3" />
+                        {t(tpl.labelKey)}
                       </button>
                     ))}
                   </div>
@@ -912,7 +912,7 @@ export function AIGenerator({ projectId }: { projectId?: string } = {}) {
           </div>
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="duration">Duration (min)</Label>
+              <Label htmlFor="duration">{t("aiGen.duration")}</Label>
               <Input
                 id="duration"
                 type="number"
@@ -923,13 +923,13 @@ export function AIGenerator({ projectId }: { projectId?: string } = {}) {
               />
             </div>
             <div className="space-y-2">
-              <Label>Language</Label>
+              <Label>{t("aiGen.language")}</Label>
               <Select value={language} onValueChange={setLanguage}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {LANGUAGES.map((l) => (
+                  {languages.map((l) => (
                     <SelectItem key={l.value} value={l.value}>
                       {l.label}
                     </SelectItem>
@@ -938,28 +938,28 @@ export function AIGenerator({ projectId }: { projectId?: string } = {}) {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Tone</Label>
+              <Label>{t("aiGen.tone")}</Label>
               <Select value={aiTone} onValueChange={(v) => setAiTone(v as typeof aiTone)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {AI_TONES.map((t) => (
-                    <SelectItem key={t.value} value={t.value}>
-                      {t.label}
+                  {tones.map((tone) => (
+                    <SelectItem key={tone.value} value={tone.value}>
+                      {tone.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Follow-up Depth</Label>
+              <Label>{t("aiGen.followUpDepth")}</Label>
               <Select value={followUpDepth} onValueChange={(v) => setFollowUpDepth(v as typeof followUpDepth)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {FOLLOW_UP_DEPTHS.map((d) => (
+                  {followUpDepths.map((d) => (
                     <SelectItem key={d.value} value={d.value}>
                       {d.label} ({d.description})
                     </SelectItem>
@@ -969,14 +969,14 @@ export function AIGenerator({ projectId }: { projectId?: string } = {}) {
             </div>
           </div>
           <div className="space-y-2">
-            <Label>Communication Channels</Label>
+            <Label>{t("aiGen.channels")}</Label>
             <div className="space-y-2 rounded-lg border p-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <MessageSquareText className="h-4 w-4 text-muted-foreground" />
                   <div>
-                    <Label>Chat</Label>
-                    <p className="text-xs text-muted-foreground">Text messaging</p>
+                    <Label>{t("aiGen.chat")}</Label>
+                    <p className="text-xs text-muted-foreground">{t("aiGen.chatDesc")}</p>
                   </div>
                 </div>
                 <Switch
@@ -992,8 +992,8 @@ export function AIGenerator({ projectId }: { projectId?: string } = {}) {
                 <div className="flex items-center gap-2">
                   <Mic className="h-4 w-4 text-muted-foreground" />
                   <div>
-                    <Label>Voice</Label>
-                    <p className="text-xs text-muted-foreground">Speech conversation</p>
+                    <Label>{t("aiGen.voice")}</Label>
+                    <p className="text-xs text-muted-foreground">{t("aiGen.voiceDesc")}</p>
                   </div>
                 </div>
                 <Switch
@@ -1010,8 +1010,8 @@ export function AIGenerator({ projectId }: { projectId?: string } = {}) {
                 <div className="flex items-center gap-2">
                   <Video className="h-4 w-4 text-muted-foreground" />
                   <div>
-                    <Label>Video</Label>
-                    <p className="text-xs text-muted-foreground">Camera &amp; screen recording</p>
+                    <Label>{t("aiGen.video")}</Label>
+                    <p className="text-xs text-muted-foreground">{t("aiGen.videoDesc")}</p>
                   </div>
                 </div>
                 <Switch
@@ -1023,16 +1023,14 @@ export function AIGenerator({ projectId }: { projectId?: string } = {}) {
             </div>
           </div>
           <div className="space-y-2">
-            <Label>Anti-Cheating Mode</Label>
+            <Label>{t("aiGen.antiCheat")}</Label>
             <div className="rounded-lg border p-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <ShieldCheck className="h-4 w-4 text-muted-foreground" />
                   <div>
-                    <Label>Enable Anti-Cheating</Label>
-                    <p className="text-xs text-muted-foreground">
-                      Requires camera, mic & screen sharing. Monitors tab switches, blocks external paste, and detects multiple screens
-                    </p>
+                    <Label>{t("aiGen.antiCheatEnable")}</Label>
+                    <p className="text-xs text-muted-foreground">{t("aiGen.antiCheatDesc")}</p>
                   </div>
                 </div>
                 <Switch
@@ -1067,11 +1065,11 @@ export function AIGenerator({ projectId }: { projectId?: string } = {}) {
             {!generating && <Sparkles className="mr-2 h-4 w-4" />}
             {generating
               ? streamPhase === "thinking"
-                ? "Thinking..."
+                ? t("aiGen.thinking")
                 : streamPhase === "writing"
-                  ? "Writing..."
-                  : "Generating..."
-              : "Generate Interview"}
+                  ? t("aiGen.writing")
+                  : t("aiGen.generating")
+              : t("aiGen.generate")}
           </AiButton>
         </CardContent>
       </Card>
@@ -1087,7 +1085,11 @@ export function AIGenerator({ projectId }: { projectId?: string } = {}) {
                   {streamPhase === "thinking" && (
                     <Loader2 className="h-3 w-3 animate-spin" />
                   )}
-                  <span>{streamPhase === "thinking" ? "Thinking..." : "Thinking complete"}</span>
+                  <span>
+                    {streamPhase === "thinking"
+                      ? t("aiGen.thinking")
+                      : t("aiGen.thinkingComplete")}
+                  </span>
                 </div>
                 <div
                   ref={thinkingRef}
@@ -1109,7 +1111,11 @@ export function AIGenerator({ projectId }: { projectId?: string } = {}) {
                   {streamPhase === "writing" && (
                     <Loader2 className="h-3 w-3 animate-spin" />
                   )}
-                  <span>{streamPhase === "writing" ? "Writing interview..." : "Finalizing..."}</span>
+                  <span>
+                    {streamPhase === "writing"
+                      ? t("aiGen.writingInterview")
+                      : t("aiGen.finalizing")}
+                  </span>
                 </div>
                 <div ref={contentRef} className="max-h-40 overflow-y-auto rounded-md bg-muted/50 px-3 py-2 code-scrollbar">
                   <p className="whitespace-pre-wrap text-xs leading-relaxed text-muted-foreground">
@@ -1452,7 +1458,11 @@ export function AIGenerator({ projectId }: { projectId?: string } = {}) {
                           {streamPhase === "thinking" && (
                             <Loader2 className="h-3 w-3 animate-spin" />
                           )}
-                          <span>{streamPhase === "thinking" ? "Thinking..." : "Thinking complete"}</span>
+                          <span>
+                    {streamPhase === "thinking"
+                      ? t("aiGen.thinking")
+                      : t("aiGen.thinkingComplete")}
+                  </span>
                         </div>
                         <div
                           ref={thinkingRef}
@@ -1473,7 +1483,11 @@ export function AIGenerator({ projectId }: { projectId?: string } = {}) {
                           {streamPhase === "writing" && (
                             <Loader2 className="h-3 w-3 animate-spin" />
                           )}
-                          <span>{streamPhase === "writing" ? "Writing interview..." : "Finalizing..."}</span>
+                          <span>
+                    {streamPhase === "writing"
+                      ? t("aiGen.writingInterview")
+                      : t("aiGen.finalizing")}
+                  </span>
                         </div>
                         <div ref={contentRef} className="max-h-40 overflow-y-auto rounded-md bg-muted/50 px-3 py-2 code-scrollbar">
                           <p className="whitespace-pre-wrap text-xs leading-relaxed text-muted-foreground">

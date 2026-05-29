@@ -1,19 +1,50 @@
 // ── Core types & helpers ────────────────────────────────────────────
 
-type LangKey = "en" | "zh";
+export type LangKey = "en" | "zh" | "ja";
 
 const DEFAULT_LANG: LangKey = "en";
 
-export type BiText = { zh: string; en: string };
+export type BiText = { zh: string; en: string; ja?: string };
 
+export function pickBiText(lang: LangKey, text: BiText): string {
+  if (lang === "zh") return text.zh;
+  if (lang === "ja") return text.ja ?? text.en;
+  return text.en;
+}
+
+/** Pick a per-locale formatter (en/zh/ja); ja falls back to en when omitted. */
+export function pickLangFn<F extends (...args: never[]) => string>(
+  lang: LangKey,
+  fns: { en: F; zh: F; ja?: F },
+  ...args: Parameters<F>
+): string {
+  const fn = lang === "zh" ? fns.zh : lang === "ja" && fns.ja ? fns.ja : fns.en;
+  return fn(...args);
+}
+
+/** @deprecated Prefer pickBiText(lang, text) */
 export function bt(isZh: boolean, text: BiText): string {
-  return isZh ? text.zh : text.en;
+  return pickBiText(isZh ? "zh" : "en", text);
 }
 
 export function getLanguageKey(language?: string): LangKey {
   if (!language) return DEFAULT_LANG;
-  const key = language.toLowerCase().slice(0, 2);
-  if (key === "zh") return "zh";
+  const normalized = language.toLowerCase();
+  if (
+    normalized.startsWith("zh") ||
+    normalized.includes("chinese") ||
+    normalized.includes("中文")
+  ) {
+    return "zh";
+  }
+  if (
+    normalized.startsWith("ja") ||
+    normalized.includes("japanese") ||
+    normalized.includes("日本語") ||
+    normalized.includes("日语")
+  ) {
+    return "ja";
+  }
   return DEFAULT_LANG;
 }
 
@@ -22,16 +53,19 @@ export function getLanguageKey(language?: string): LangKey {
 export const MIC_TEST_MESSAGES: Record<LangKey, string> = {
   en: "Hello! If you can hear my voice clearly, please say yes or confirm.",
   zh: "你好！如果你能清楚地听到我的声音，请说「是」或「确认」。",
+  ja: "こんにちは。はっきり声が聞こえたら、「はい」または「確認」と言ってください。",
 };
 
 export const POSITIVE_WORDS: Record<LangKey, string[]> = {
   en: ["yes", "yeah", "yep", "confirm", "hear", "ok", "okay", "sure", "can", "clear", "good", "fine", "right"],
   zh: ["是", "好", "确认", "听到", "可以", "没问题", "对", "嗯", "行", "能听到", "听得到", "好的"],
+  ja: ["はい", "ええ", "うん", "確認", "聞こえる", "大丈夫", "オーケー", "わかりました", "問題ない", "聞こえます", "はい"],
 };
 
 export const SPEECH_SYNTHESIS_LOCALE: Record<LangKey, string> = {
   en: "en-US",
   zh: "zh-CN",
+  ja: "ja-JP",
 };
 
 export function getMicTestMessage(language?: string): string {
@@ -95,4 +129,5 @@ export const INTERVIEW_MESSAGES = {
 export const LANGUAGE_DISPLAY_NAME: Record<LangKey, string> = {
   zh: "简体中文 (Simplified Chinese)",
   en: "English",
+  ja: "日本語 (Japanese)",
 };

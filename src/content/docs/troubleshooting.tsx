@@ -1,12 +1,24 @@
-import type { DocArticle } from "./types";
+﻿import type { DocArticle } from "./types";
 import { DocCallout } from "@/components/docs/doc-callout";
+import {
+  audioAndConnectionContentJa,
+  browserAndVideoContentJa,
+} from "./ja/troubleshooting";
+import {
+  audioAndConnectionContentZh,
+  browserAndVideoContentZh,
+} from "./zh/troubleshooting";
 
 export const troubleshootingArticles: DocArticle[] = [
   {
     slug: "audio-and-connection",
     categorySlug: "troubleshooting",
     title: "Audio and Connection",
+    titleZh: "音频与连接",
     description: "Microphone setup, network requirements, and reconnection",
+    descriptionZh: "麦克风设置、网络要求与重新连接",
+    titleJa: "音声と接続",
+    descriptionJa: "マイク、ネットワーク、接続の問題",
     audience: "both",
     order: 1,
     content: () => (
@@ -41,7 +53,7 @@ export const troubleshootingArticles: DocArticle[] = [
 
         <h3>If You Get Disconnected</h3>
         <p>
-          Aural saves your progress automatically. Return to the same interview link to resume where you left off. If a reconnect button appears, click it. Otherwise, refresh the page.
+          Lingwu saves your progress automatically. Return to the same interview link to resume where you left off. If a reconnect button appears, click it. Otherwise, refresh the page.
         </p>
         <ul>
           <li>Use a stable network — avoid switching Wi-Fi mid-session</li>
@@ -50,12 +62,18 @@ export const troubleshootingArticles: DocArticle[] = [
         </ul>
       </>
     ),
+    contentZh: audioAndConnectionContentZh,
+    contentJa: audioAndConnectionContentJa,
   },
   {
     slug: "browser-and-video",
     categorySlug: "troubleshooting",
     title: "Browser and Video",
+    titleZh: "浏览器与视频",
     description: "Browser compatibility, camera, and screen sharing issues",
+    descriptionZh: "浏览器兼容性、摄像头与屏幕共享问题",
+    titleJa: "ブラウザと動画",
+    descriptionJa: "ブラウザ互換性、カメラ、画面共有の問題",
     audience: "both",
     order: 2,
     content: () => (
@@ -67,11 +85,11 @@ export const troubleshootingArticles: DocArticle[] = [
         <ul>
           <li><strong>Firefox</strong> — generally works, but some audio device selection features may behave differently</li>
           <li><strong>Safari</strong> — limited support for some voice and video features</li>
-          <li><strong>Mobile browsers</strong> — Aural can run on mobile, but screen size and background tab behavior may affect the experience. Use desktop for important interviews.</li>
+          <li><strong>Mobile browsers</strong> — Lingwu can run on mobile, but screen size and background tab behavior may affect the experience. Use desktop for important interviews.</li>
         </ul>
 
         <DocCallout variant="info">
-          Keep your browser up to date. Older versions may lack WebRTC and audio API fixes that Aural depends on.
+          Keep your browser up to date. Older versions may lack WebRTC and audio API fixes that Lingwu depends on.
         </DocCallout>
 
         <hr />
@@ -97,5 +115,7 @@ export const troubleshootingArticles: DocArticle[] = [
         </ul>
       </>
     ),
+    contentZh: browserAndVideoContentZh,
+    contentJa: browserAndVideoContentJa,
   },
 ];

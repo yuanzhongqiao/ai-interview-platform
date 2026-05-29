@@ -1,15 +1,27 @@
-import { DocCallout } from "@/components/docs/doc-callout";
+﻿import { DocCallout } from "@/components/docs/doc-callout";
 import { DocFeature, DocFeatureGrid } from "@/components/docs/doc-feature-grid";
 import { DocImage } from "@/components/docs/doc-image";
 import { DocStep, DocSteps } from "@/components/docs/doc-steps";
 import type { DocArticle } from "./types";
+import {
+  accessingYourInterviewContentJa,
+  duringYourInterviewContentJa,
+} from "./ja/taking-an-interview";
+import {
+  accessingYourInterviewContentZh,
+  duringYourInterviewContentZh,
+} from "./zh/taking-an-interview";
 
 export const takingAnInterviewArticles: DocArticle[] = [
   {
     slug: "accessing-your-interview",
     categorySlug: "taking-an-interview",
     title: "Accessing Your Interview",
+    titleZh: "进入面试",
     description: "Open the link, verify your identity, set up your microphone, and start",
+    descriptionZh: "打开链接、验证身份、配置麦克风并开始",
+    titleJa: "面接にアクセス",
+    descriptionJa: "リンクを開く、本人確認、マイク設定、開始",
     audience: "interviewees",
     order: 1,
     content: () => (
@@ -26,7 +38,7 @@ export const takingAnInterviewArticles: DocArticle[] = [
         <h2>Getting Into Your Interview</h2>
         <DocSteps>
           <DocStep step={1} title="Open the Link and Enter Your Details">
-            <p>Click the interview link to open the Aural interview page. On the welcome screen, enter your full name and email address, then click <strong>Begin Interview</strong>.</p>
+            <p>Click the interview link to open the Lingwu interview page. On the welcome screen, enter your full name and email address, then click <strong>Begin Interview</strong>.</p>
             <DocImage src="/images/docs/interviewee-landing.webp" alt="Interviewee welcome screen with name and email fields" />
           </DocStep>
           <DocStep step={2} title="Complete the Checklist">
@@ -44,12 +56,18 @@ export const takingAnInterviewArticles: DocArticle[] = [
         </DocCallout>
       </>
     ),
+    contentZh: accessingYourInterviewContentZh,
+    contentJa: accessingYourInterviewContentJa,
   },
   {
     slug: "during-your-interview",
     categorySlug: "taking-an-interview",
     title: "During Your Interview",
+    titleZh: "面试进行中",
     description: "Voice, chat, video modes, code editor, whiteboard, and navigation",
+    descriptionZh: "语音、聊天、视频模式，以及代码编辑器、白板与导航",
+    titleJa: "面接中",
+    descriptionJa: "音声・チャット・動画、コードエディタ、ホワイトボード、ナビゲーション",
     audience: "interviewees",
     order: 2,
     content: () => (
@@ -137,7 +155,7 @@ export const takingAnInterviewArticles: DocArticle[] = [
 
         <h3>If You Get Disconnected</h3>
         <p>
-          Aural saves your progress automatically. Return to the same interview link, verify your identity if prompted, and continue where you left off — previous answers are preserved.
+          Lingwu saves your progress automatically. Return to the same interview link, verify your identity if prompted, and continue where you left off — previous answers are preserved.
         </p>
 
         <DocCallout variant="tip" title="To avoid interruptions">
@@ -145,5 +163,7 @@ export const takingAnInterviewArticles: DocArticle[] = [
         </DocCallout>
       </>
     ),
+    contentZh: duringYourInterviewContentZh,
+    contentJa: duringYourInterviewContentJa,
   },
 ];

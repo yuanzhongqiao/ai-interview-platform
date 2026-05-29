@@ -1,6 +1,12 @@
-import type { ReactNode } from "react";
+﻿import type { ReactNode } from "react";
 import { isValidElement, Children } from "react";
 import type { DocCategory, DocArticle } from "./types";
+import type { DocsLocale } from "@/lib/docs/locale";
+import {
+  resolveArticleDescription,
+  resolveArticleTitle,
+  resolveArticleContent,
+} from "@/lib/docs/locale";
 
 import { gettingStartedArticles } from "./getting-started";
 import { creatingInterviewsArticles } from "./creating-interviews";
@@ -17,7 +23,11 @@ export const categories: DocCategory[] = [
   {
     slug: "getting-started",
     title: "Getting Started",
-    description: "Learn the basics of Aural and set up your first interview",
+    titleZh: "快速入门",
+    titleJa: "はじめに",
+    description: "Learn the basics of Lingwu and set up your first interview",
+    descriptionZh: "了解聆悟基础能力，并完成第一次 AI 面试配置",
+    descriptionJa: "Lingwu の基本と最初の AI 面接のセットアップ",
     iconName: "Rocket",
     audience: "both",
     order: 1,
@@ -25,7 +35,11 @@ export const categories: DocCategory[] = [
   {
     slug: "creating-interviews",
     title: "Creating Interviews",
+    titleZh: "创建面试",
+    titleJa: "面接の作成",
     description: "Design interviews with AI or build them manually",
+    descriptionZh: "使用 AI 生成或手动设计结构化面试",
+    descriptionJa: "AI または手動で構造化面接を設計",
     iconName: "PenTool",
     audience: "creators",
     order: 2,
@@ -33,7 +47,11 @@ export const categories: DocCategory[] = [
   {
     slug: "managing-candidates",
     title: "Managing Candidates",
+    titleZh: "候选人管理",
+    titleJa: "候補者管理",
     description: "Add candidates, share links, and track sessions",
+    descriptionZh: "添加候选人、分享链接并跟踪面试进度",
+    descriptionJa: "候補者の追加、リンク共有、セッション追跡",
     iconName: "Users",
     audience: "creators",
     order: 3,
@@ -41,7 +59,11 @@ export const categories: DocCategory[] = [
   {
     slug: "taking-an-interview",
     title: "Taking an Interview",
+    titleZh: "参加面试",
+    titleJa: "面接を受ける",
     description: "Guide for interviewees on voice, chat, and video sessions",
+    descriptionZh: "候选人语音、文字与视频面试操作指南",
+    descriptionJa: "候補者向け：音声・チャット・動画面接ガイド",
     iconName: "Mic",
     audience: "interviewees",
     order: 4,
@@ -49,7 +71,11 @@ export const categories: DocCategory[] = [
   {
     slug: "practices",
     title: "Practices",
+    titleZh: "模拟练习",
+    titleJa: "練習",
     description: "Rehearse existing interviews with voice coaching, AI feedback, suggested answers, and progress tracking",
+    descriptionZh: "语音陪练、AI 反馈、参考答案与进度跟踪",
+    descriptionJa: "音声コーチング、AI フィードバック、模範回答、進捗管理",
     iconName: "BrainCircuit",
     audience: "creators",
     order: 5,
@@ -57,7 +83,11 @@ export const categories: DocCategory[] = [
   {
     slug: "results-analytics",
     title: "Results & Analytics",
+    titleZh: "结果与分析",
+    titleJa: "結果と分析",
     description: "Review transcripts, AI insights, and export reports",
+    descriptionZh: "查看转录、AI 洞察并导出报告",
+    descriptionJa: "文字起こし、AI インサイト、レポートエクスポート",
     iconName: "BarChart3",
     audience: "creators",
     order: 6,
@@ -65,7 +95,11 @@ export const categories: DocCategory[] = [
   {
     slug: "teams-organizations",
     title: "Teams & Organizations",
+    titleZh: "团队与组织",
+    titleJa: "チームと組織",
     description: "Collaborate with your team and manage projects",
+    descriptionZh: "团队协作与项目管理",
+    descriptionJa: "チーム協業とプロジェクト管理",
     iconName: "Building2",
     audience: "creators",
     order: 7,
@@ -73,7 +107,11 @@ export const categories: DocCategory[] = [
   {
     slug: "account-security",
     title: "Account & Security",
+    titleZh: "账户与安全",
+    titleJa: "アカウントとセキュリティ",
     description: "Manage your profile, password, and data privacy",
+    descriptionZh: "管理个人资料、密码与数据隐私",
+    descriptionJa: "プロフィール、パスワード、データプライバシーの管理",
     iconName: "Shield",
     audience: "both",
     order: 8,
@@ -81,7 +119,11 @@ export const categories: DocCategory[] = [
   {
     slug: "troubleshooting",
     title: "Troubleshooting",
+    titleZh: "故障排查",
+    titleJa: "トラブルシューティング",
     description: "Fix common issues with audio, video, and connectivity",
+    descriptionZh: "解决音频、视频与连接常见问题",
+    descriptionJa: "音声・動画・接続の一般的な問題の解決",
     iconName: "Wrench",
     audience: "both",
     order: 9,
@@ -89,7 +131,11 @@ export const categories: DocCategory[] = [
   {
     slug: "faq",
     title: "FAQ",
+    titleZh: "常见问题",
+    titleJa: "よくある質問",
     description: "Answers to frequently asked questions",
+    descriptionZh: "关于聆悟的常见问题解答",
+    descriptionJa: "Lingwu に関するよくある質問",
     iconName: "HelpCircle",
     audience: "both",
     order: 10,
@@ -155,11 +201,11 @@ function extractText(node: ReactNode): string {
 
 const textCache = new Map<string, string>();
 
-function getArticleText(article: DocArticle): string {
-  const key = `${article.categorySlug}/${article.slug}`;
+function getArticleText(article: DocArticle, locale: DocsLocale = "en"): string {
+  const key = `${article.categorySlug}/${article.slug}/${locale}`;
   let text = textCache.get(key);
   if (text == null) {
-    text = extractText(article.content())
+    text = extractText(resolveArticleContent(article, locale)())
       .replace(/\s+/g, " ")
       .trim()
       .toLowerCase();
@@ -180,19 +226,26 @@ function buildSnippet(text: string, query: string): string | undefined {
   return snippet;
 }
 
-export function searchArticles(query: string): SearchResult[] {
+export function searchArticles(
+  query: string,
+  locale: DocsLocale = "en",
+): SearchResult[] {
   const lower = query.toLowerCase();
   const results: SearchResult[] = [];
 
   for (const article of allArticles) {
-    const titleMatch = article.title.toLowerCase().includes(lower);
-    const descMatch = article.description.toLowerCase().includes(lower);
+    const titleMatch = resolveArticleTitle(article, locale)
+      .toLowerCase()
+      .includes(lower);
+    const descMatch = resolveArticleDescription(article, locale)
+      .toLowerCase()
+      .includes(lower);
     if (titleMatch || descMatch) {
       results.push({ article });
       continue;
     }
 
-    const bodyText = getArticleText(article);
+    const bodyText = getArticleText(article, locale);
     const snippet = buildSnippet(bodyText, lower);
     if (snippet) {
       results.push({ article, snippet });

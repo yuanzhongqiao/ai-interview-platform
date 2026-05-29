@@ -6,6 +6,19 @@ import { NextResponse, type NextRequest } from "next/server";
  * This is the official Supabase pattern for Next.js App Router.
  */
 export async function middleware(request: NextRequest) {
+  if (request.method === "OPTIONS") {
+    return new NextResponse(null, {
+      status: 204,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods":
+          "GET,POST,PUT,PATCH,DELETE,OPTIONS",
+        "Access-Control-Allow-Headers":
+          "Content-Type, Authorization, X-Requested-With",
+      },
+    });
+  }
+
   // Skip cookie refresh for mobile requests using Bearer token auth
   if (request.headers.get("authorization")?.startsWith("Bearer ")) {
     return NextResponse.next({ request });

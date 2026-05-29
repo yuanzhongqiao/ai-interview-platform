@@ -4,6 +4,8 @@ import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { usePathname, useRouter } from "next/navigation";
 import { Check, RotateCcw, Play, X, EyeOff } from "lucide-react";
+import { useAppLocale } from "@/components/app-locale-provider";
+import { tourStepTitle } from "@/lib/i18n/tour";
 import { useTourSafe } from "./tour-provider";
 import { TOUR_STEPS, TOUR_EDIT_URL_KEY, type TourStep } from "./tour-steps";
 
@@ -24,6 +26,7 @@ interface TourChecklistProps {
 }
 
 export function TourChecklist({ open, onClose }: TourChecklistProps) {
+  const { t } = useAppLocale();
   const tour = useTourSafe();
   const router = useRouter();
   const pathname = usePathname();
@@ -96,7 +99,7 @@ export function TourChecklist({ open, onClose }: TourChecklistProps) {
       <div className="px-4 py-3 space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="text-base font-bold text-foreground">
-            Getting Started
+            {t("tour.checklist.title")}
           </h3>
           <button
             onClick={onClose}
@@ -109,7 +112,7 @@ export function TourChecklist({ open, onClose }: TourChecklistProps) {
         <div>
           <div className="flex items-center gap-2">
             <span className="text-xs font-medium text-muted-foreground">
-              {progress}% complete
+              {t("tour.checklist.progress", { progress })}
             </span>
           </div>
           <div className="mt-1.5 h-1.5 w-full rounded-full bg-muted">
@@ -149,7 +152,7 @@ export function TourChecklist({ open, onClose }: TourChecklistProps) {
                         : "text-muted-foreground/70"
                   }
                 >
-                  {step.title}
+                  {tourStepTitle(step.id, t)}
                 </span>
               </li>
             );
@@ -164,14 +167,14 @@ export function TourChecklist({ open, onClose }: TourChecklistProps) {
                 className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium hover:bg-muted transition-colors"
               >
                 <RotateCcw className="h-3 w-3" />
-                Restart
+                {t("tour.checklist.restart")}
               </button>
               <button
                 onClick={handleContinue}
                 className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
               >
                 <Play className="h-3 w-3" />
-                Continue
+                {t("tour.checklist.continue")}
               </button>
             </div>
             <button
@@ -179,7 +182,7 @@ export function TourChecklist({ open, onClose }: TourChecklistProps) {
               className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg px-3 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
             >
               <EyeOff className="h-3 w-3" />
-              Dismiss tour
+              {t("tour.checklist.dismiss")}
             </button>
           </div>
         ) : (
@@ -189,7 +192,7 @@ export function TourChecklist({ open, onClose }: TourChecklistProps) {
               className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium hover:bg-muted transition-colors"
             >
               <RotateCcw className="h-3 w-3" />
-              Restart Tour
+              {t("tour.checklist.restartTour")}
             </button>
           </div>
         )}

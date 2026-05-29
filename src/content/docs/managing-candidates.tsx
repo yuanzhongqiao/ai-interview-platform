@@ -1,15 +1,21 @@
-import type { DocArticle } from "./types";
+﻿import type { DocArticle } from "./types";
 import { DocCallout } from "@/components/docs/doc-callout";
 import { DocFeatureGrid, DocFeature } from "@/components/docs/doc-feature-grid";
 import { DocImage } from "@/components/docs/doc-image";
 import { DocSteps, DocStep } from "@/components/docs/doc-steps";
+import { candidatesLinksAndTrackingContentJa } from "./ja/managing-candidates";
+import { candidatesLinksAndTrackingContentZh } from "./zh/managing-candidates";
 
 export const managingCandidatesArticles: DocArticle[] = [
   {
     slug: "candidates-links-and-tracking",
     categorySlug: "managing-candidates",
     title: "Candidates, Links, and Tracking",
+    titleZh: "候选人、链接与跟踪",
     description: "Add candidates, share links, track session status, and handle retakes",
+    descriptionZh: "添加候选人、分享链接、跟踪会话状态与处理重考",
+    titleJa: "候補者、リンク、追跡",
+    descriptionJa: "候補者の追加、リンク共有、セッション追跡",
     audience: "creators",
     order: 1,
     content: () => (
@@ -70,5 +76,7 @@ export const managingCandidatesArticles: DocArticle[] = [
         </DocCallout>
       </>
     ),
+    contentZh: candidatesLinksAndTrackingContentZh,
+    contentJa: candidatesLinksAndTrackingContentJa,
   },
 ];

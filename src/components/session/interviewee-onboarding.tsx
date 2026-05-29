@@ -11,12 +11,17 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { AuralLogo } from "@/components/ui/aural-logo";
+import { BrandMark } from "@/components/ui/brand-mark";
+import { useBrandDocumentTitle } from "@/hooks/use-brand-document-title";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { InterviewContext } from "@/hooks/use-voice";
 import { getMicTestMessage, getSpeechSynthesisLocale } from "@/lib/i18n";
+import {
+  getIntervieweeUi,
+  type IntervieweeUi,
+} from "@/lib/i18n/interviewee-ui";
 import {
     setCameraSkipped,
     setScreenSkipped,
@@ -42,7 +47,7 @@ import {
     ScreenShare,
     User,
 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { IntervieweeTourOverlay } from "./interviewee-tour-overlay";
 import { IntervieweeTourProvider, useIntervieweeTour } from "./interviewee-tour-provider";
 import { VoiceInterface } from "./voice-interface";
@@ -63,11 +68,13 @@ interface IntervieweeOnboardingProps {
 
 type OnboardingStep = "info" | "checklist" | "howItWorks";
 
-const STEPS = [
-  { key: "info" as const, label: "Interview Info" },
-  { key: "checklist" as const, label: "Checklist" },
-  { key: "enter" as const, label: "Start" },
-];
+function getSteps(ui: IntervieweeUi) {
+  return [
+    { key: "info" as const, label: ui.steps.info },
+    { key: "checklist" as const, label: ui.steps.checklist },
+    { key: "enter" as const, label: ui.steps.start },
+  ];
+}
 
 function WelcomeIllustration() {
   return (
@@ -85,9 +92,11 @@ function WelcomeIllustration() {
 
 export function PreviewWrapper({
   onReady,
+  ui,
   children,
 }: {
   onReady: () => void;
+  ui: IntervieweeUi;
   children: React.ReactNode;
 }) {
   const tour = useIntervieweeTour();
@@ -115,14 +124,12 @@ export function PreviewWrapper({
           <div className="mx-4 w-full max-w-md overflow-hidden rounded-2xl border border-border/30 bg-white shadow-2xl">
             <WelcomeIllustration />
             <div className="space-y-3 px-8 pb-8 pt-2 text-center">
-              <h3 className="text-xl font-bold text-gray-900">Welcome to your interview!</h3>
+              <h3 className="text-xl font-bold text-gray-900">{ui.welcomeTitle}</h3>
               <p className="text-[15px] font-medium text-gray-700">
-                Take a quick tour of the interview interface.
+                {ui.welcomeLead}
               </p>
               <p className="text-sm leading-relaxed text-gray-500">
-                We&apos;ll walk you through the key features — voice controls,
-                transcript, whiteboard, and more — so you know exactly where
-                everything is.
+                {ui.welcomeBody}
               </p>
               <div className="flex items-stretch gap-3 pt-3">
                 <Button
@@ -131,10 +138,10 @@ export function PreviewWrapper({
                   className="text-muted-foreground"
                   onClick={handleSkipTour}
                 >
-                  Skip for now
+                  {ui.skipForNow}
                 </Button>
                 <Button className="flex-1" size="lg" onClick={handleStartTour}>
-                  Take a quick tour
+                  {ui.takeTour}
                 </Button>
               </div>
             </div>
@@ -147,9 +154,9 @@ export function PreviewWrapper({
         <div className="absolute inset-0 z-[9997] flex items-center justify-center bg-black/40 backdrop-blur-[2px]">
           <div className="mx-4 w-full max-w-md space-y-4 rounded-2xl border bg-card p-6 shadow-2xl">
             <div className="text-center">
-              <h3 className="text-lg font-semibold">You&apos;re all set!</h3>
+              <h3 className="text-lg font-semibold">{ui.tourDoneTitle}</h3>
               <p className="mt-1 text-sm text-muted-foreground">
-                You can start the interview now, or restart the tour if you&apos;d like another look.
+                {ui.tourDoneBody}
               </p>
             </div>
             <div className="flex items-stretch gap-3">
@@ -160,10 +167,10 @@ export function PreviewWrapper({
                 onClick={() => tour?.restart()}
               >
                 <RotateCcw className="h-3.5 w-3.5" />
-                Restart tour
+                {ui.restartTour}
               </Button>
               <Button className="flex-1" size="lg" onClick={onReady}>
-                Start Interview
+                {ui.startInterview}
               </Button>
             </div>
           </div>
@@ -173,13 +180,20 @@ export function PreviewWrapper({
   );
 }
 
-function StepIndicator({ current }: { current: OnboardingStep }) {
+function StepIndicator({
+  current,
+  ui,
+}: {
+  current: OnboardingStep;
+  ui: IntervieweeUi;
+}) {
+  const steps = getSteps(ui);
   const stepIdxMap: Record<OnboardingStep, number> = { info: 0, checklist: 1, howItWorks: 2 };
-  const currentIdx = Math.min(stepIdxMap[current], STEPS.length - 1);
+  const currentIdx = Math.min(stepIdxMap[current], steps.length - 1);
 
   return (
     <div className="flex items-center justify-center gap-2 py-6">
-      {STEPS.map((step, idx) => {
+      {steps.map((step, idx) => {
         const isComplete = idx < currentIdx;
         const isCurrent = idx === currentIdx;
 
@@ -234,10 +248,12 @@ function CameraCheck({
   done,
   onDone,
   allowSkip = true,
+  ui,
 }: {
   done: boolean;
   onDone: () => void;
   allowSkip?: boolean;
+  ui: IntervieweeUi;
 }) {
   const [showSkipDialog, setShowSkipDialog] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -263,9 +279,9 @@ function CameraCheck({
       setPhoto(null);
       setStreaming(true);
     } catch {
-      setError("Unable to access camera. Please check permissions.");
+      setError(ui.camera.error);
     }
-  }, []);
+  }, [ui.camera.error]);
 
   const stopCamera = useCallback(() => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
@@ -325,7 +341,7 @@ function CameraCheck({
               <div className="flex h-full w-full flex-col items-center justify-center gap-2">
                 <User className="h-10 w-10 text-muted-foreground/30" />
                 <span className="text-[11px] text-muted-foreground/50">
-                  Keep your eyes on the camera
+                  {ui.camera.eyesOnCamera}
                 </span>
               </div>
             )}
@@ -333,51 +349,45 @@ function CameraCheck({
           {!photo && !streaming && !done && (
             <Button size="sm" onClick={startCamera} className="w-full">
               <Camera className="mr-1.5 h-3.5 w-3.5" />
-              Start Collecting
+              {ui.camera.startCollecting}
             </Button>
           )}
           {streaming && (
             <Button size="sm" onClick={capture} className="w-full">
-              Capture
+              {ui.camera.capture}
             </Button>
           )}
           {photo && (
             <Button size="sm" variant="outline" onClick={retake} className="w-full">
               <RefreshCw className="mr-1 h-3 w-3" />
-              Retake
+              {ui.camera.retake}
             </Button>
           )}
         </div>
 
         <div className="flex-1 space-y-2">
-          <p className="text-sm font-medium">
-            The photo will be compared with snapshots during the interview, so
-            please keep your face visible.
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Photo collection requires authorization, please operate according to
-            browser prompts.
-          </p>
+          <p className="text-sm font-medium">{ui.camera.compareHint}</p>
+          <p className="text-xs text-muted-foreground">{ui.camera.authHint}</p>
           {error && (
             <div className="flex items-center gap-1.5 rounded-md bg-destructive/10 px-2.5 py-1.5 text-xs text-destructive">
               <AlertCircle className="h-3.5 w-3.5 shrink-0" />
               <span>{error}</span>
               <button type="button" className="ml-auto font-medium underline" onClick={startCamera}>
-                Retry
+                {ui.common.retry}
               </button>
             </div>
           )}
           {allowSkip && !error && !photo && !streaming && !done && (
             <p className="text-xs text-muted-foreground">
-              No camera?{" "}
+              {ui.camera.noCamera}{" "}
               <button type="button" className="font-medium text-primary hover:underline" onClick={() => setShowSkipDialog(true)}>
-                Skip
+                {ui.common.skip}
               </button>
             </p>
           )}
           {!allowSkip && !error && !photo && !streaming && !done && (
             <p className="text-xs text-amber-600 dark:text-amber-400">
-              Camera is required for this interview.
+              {ui.camera.required}
             </p>
           )}
         </div>
@@ -386,12 +396,12 @@ function CameraCheck({
           {done ? (
             <span className="flex items-center gap-1.5 text-sm font-medium text-secondary-600 dark:text-secondary-400">
               <CheckCircle2 className="h-4 w-4" />
-              Collect photo
+              {ui.camera.label}
             </span>
           ) : (
             <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
               <div className="h-4 w-4 rounded-full border-2" />
-              Collect photo
+              {ui.camera.label}
             </span>
           )}
         </div>
@@ -400,17 +410,13 @@ function CameraCheck({
       <AlertDialog open={showSkipDialog} onOpenChange={setShowSkipDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Skip photo collection?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Skipping photo collection is not recommended. The photo is used to
-              verify your identity during the interview. Skipping may affect your
-              interview results.
-            </AlertDialogDescription>
+            <AlertDialogTitle>{ui.camera.skipTitle}</AlertDialogTitle>
+            <AlertDialogDescription>{ui.camera.skipDesc}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Go back</AlertDialogCancel>
+            <AlertDialogCancel>{ui.common.goBack}</AlertDialogCancel>
             <AlertDialogAction onClick={() => { setCameraSkipped(true); onDone(); }}>
-              Skip anyway
+              {ui.common.skipAnyway}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -421,7 +427,19 @@ function CameraCheck({
 
 type MicPhase = "idle" | "requesting" | "playing" | "listening" | "analyzing" | "confirm";
 
-function MicCheck({ done, onDone, language, allowSkip = true }: { done: boolean; onDone: () => void; language?: string; allowSkip?: boolean }) {
+function MicCheck({
+  done,
+  onDone,
+  language,
+  allowSkip = true,
+  ui,
+}: {
+  done: boolean;
+  onDone: () => void;
+  language?: string;
+  allowSkip?: boolean;
+  ui: IntervieweeUi;
+}) {
   const [phase, setPhase] = useState<MicPhase>("idle");
   const [error, setError] = useState<string | null>(null);
   const [showSkipDialog, setShowSkipDialog] = useState(false);
@@ -665,7 +683,7 @@ function MicCheck({ done, onDone, language, allowSkip = true }: { done: boolean;
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       stream.getTracks().forEach((t) => t.stop());
     } catch {
-      setError("Unable to access microphone. Please check permissions.");
+      setError(ui.mic.error);
       setPhase("idle");
       return;
     }
@@ -816,7 +834,7 @@ function MicCheck({ done, onDone, language, allowSkip = true }: { done: boolean;
               <div className="flex flex-col items-center gap-1">
                 <div className="flex gap-1">
                   <div className="h-2 w-2 animate-pulse rounded-full bg-destructive" />
-                  <span className="text-[11px] font-medium text-destructive">Listening...</span>
+                  <span className="text-[11px] font-medium text-destructive">{ui.mic.listening}</span>
                 </div>
                 {transcript && (
                   <span className="max-w-[10rem] truncate text-[10px] text-muted-foreground">
@@ -826,105 +844,94 @@ function MicCheck({ done, onDone, language, allowSkip = true }: { done: boolean;
               </div>
             )}
             {phase === "analyzing" && (
-              <span className="text-[11px] text-muted-foreground">Analyzing...</span>
+              <span className="text-[11px] text-muted-foreground">{ui.mic.analyzing}</span>
             )}
             {phase === "idle" && !done && (
               <span className="text-[11px] text-muted-foreground/50">
-                Speaker &amp; Microphone
+                {ui.mic.speakerMic}
               </span>
             )}
             {done && !skipped && (
               <span className="text-xs font-medium text-secondary-600 dark:text-secondary-400">
-                Audio confirmed
+                {ui.mic.audioConfirmed}
               </span>
             )}
           </div>
           {phase === "idle" && !done && (
             <Button size="sm" onClick={playTTS} className="w-full">
               <Mic className="mr-1.5 h-3.5 w-3.5" />
-              Test Microphone
+              {ui.mic.testBtn}
             </Button>
           )}
           {phase === "requesting" && (
             <Button size="sm" disabled className="w-full">
               <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-              Requesting access...
+              {ui.mic.requesting}
             </Button>
           )}
           {phase === "playing" && (
             <Button size="sm" variant="outline" onClick={() => { stopAll(); setPhase("idle"); }} className="w-full">
-              Stop
+              {ui.mic.stop}
             </Button>
           )}
           {phase === "listening" && (
             <Button size="sm" variant="outline" disabled className="w-full">
               <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-              Listening...
+              {ui.mic.listening}
             </Button>
           )}
           {phase === "analyzing" && (
             <Button size="sm" disabled className="w-full">
               <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-              Analyzing...
+              {ui.mic.analyzing}
             </Button>
           )}
           {phase === "confirm" && !done && (
             <Button size="sm" onClick={playTTS} className="w-full">
               <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
-              Play again
+              {ui.mic.playAgain}
             </Button>
           )}
         </div>
 
         <div className="flex-1 space-y-2">
-          <p className="text-sm font-medium">
-            Test your speaker and microphone to ensure audio is working
-            properly.
-          </p>
+          <p className="text-sm font-medium">{ui.mic.title}</p>
           <p className="text-xs text-muted-foreground">
-            {phase === "idle" && !done &&
-              "Click \"Test Microphone\" to hear a message from the voice agent. Then speak your response to confirm the audio works — just like in the actual interview."}
-            {phase === "requesting" &&
-              "Granting microphone access..."}
-            {phase === "playing" &&
-              "The voice agent is speaking — listen carefully..."}
-            {phase === "listening" &&
-              "Please say \"yes\" or \"I can hear you\" to confirm."}
-            {phase === "analyzing" &&
-              "Checking your response..."}
-            {phase === "confirm" && !done && allowSkip &&
-              "We couldn't detect your voice. Try again, or "}
+            {phase === "idle" && !done && ui.mic.phaseIdle}
+            {phase === "requesting" && ui.mic.phaseRequesting}
+            {phase === "playing" && ui.mic.phasePlaying}
+            {phase === "listening" && ui.mic.phaseListening}
+            {phase === "analyzing" && ui.mic.phaseAnalyzing}
+            {phase === "confirm" && !done && allowSkip && ui.mic.phaseConfirmRetry}
             {phase === "confirm" && !done && allowSkip && (
               <button type="button" className="font-medium text-primary hover:underline" onClick={() => setShowSkipDialog(true)}>
-                skip this step
+                {ui.mic.skipThisStep}
               </button>
             )}
-            {phase === "confirm" && !done && allowSkip && "."}
-            {phase === "confirm" && !done && !allowSkip &&
-              "We couldn't detect your voice. Please try again."}
-            {done &&
-              "Audio test passed. Your speaker and microphone are working."}
+            {phase === "confirm" && !done && allowSkip && (ui.isZh ? "。" : ".")}
+            {phase === "confirm" && !done && !allowSkip && ui.mic.phaseConfirmNoSkip}
+            {done && ui.mic.passed}
           </p>
           {error && (
             <div className="flex items-center gap-1.5 rounded-md bg-destructive/10 px-2.5 py-1.5 text-xs text-destructive">
               <AlertCircle className="h-3.5 w-3.5 shrink-0" />
               <span>{error}</span>
               <button type="button" className="ml-auto font-medium underline" onClick={playTTS}>
-                Retry
+                {ui.common.retry}
               </button>
             </div>
           )}
           {allowSkip && !error && phase === "idle" && !done && (
             <p className="text-xs text-muted-foreground">
-              No microphone?{" "}
+              {ui.mic.noMic}{" "}
               <button type="button" className="font-medium text-primary hover:underline" onClick={() => setShowSkipDialog(true)}>
-                Skip
+                {ui.common.skip}
               </button>
             </p>
           )}
           {!allowSkip && !error && phase === "idle" && !done && (
             <p className="text-xs text-amber-600 dark:text-amber-400">
-              Microphone is required for this interview.
+              {ui.mic.required}
             </p>
           )}
         </div>
@@ -933,12 +940,12 @@ function MicCheck({ done, onDone, language, allowSkip = true }: { done: boolean;
           {done ? (
             <span className="flex items-center gap-1.5 text-sm font-medium text-secondary-600 dark:text-secondary-400">
               <CheckCircle2 className="h-4 w-4" />
-              Microphone
+              {ui.mic.label}
             </span>
           ) : (
             <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
               <div className="h-4 w-4 rounded-full border-2" />
-              Microphone
+              {ui.mic.label}
             </span>
           )}
         </div>
@@ -946,17 +953,13 @@ function MicCheck({ done, onDone, language, allowSkip = true }: { done: boolean;
       <AlertDialog open={showSkipDialog} onOpenChange={setShowSkipDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Skip microphone test?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Skipping the microphone test is not recommended. If your speaker or
-              microphone is not working properly, it may affect your interview
-              experience and results.
-            </AlertDialogDescription>
+            <AlertDialogTitle>{ui.mic.skipTitle}</AlertDialogTitle>
+            <AlertDialogDescription>{ui.mic.skipDesc}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Go back</AlertDialogCancel>
+            <AlertDialogCancel>{ui.common.goBack}</AlertDialogCancel>
             <AlertDialogAction onClick={() => { setPhase("idle"); setSkipped(true); onDone(); }}>
-              Skip anyway
+              {ui.common.skipAnyway}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -969,10 +972,12 @@ function ScreenCheck({
   done,
   onDone,
   allowSkip = true,
+  ui,
 }: {
   done: boolean;
   onDone: () => void;
   allowSkip?: boolean;
+  ui: IntervieweeUi;
 }) {
   const [error, setError] = useState<string | null>(null);
   const [thumbnail, setThumbnail] = useState<string | null>(null);
@@ -1006,9 +1011,7 @@ function ScreenCheck({
       const settings = videoTrack?.getSettings() as MediaTrackSettings & { displaySurface?: string };
       if (settings.displaySurface && settings.displaySurface !== "monitor") {
         stream.getTracks().forEach((t) => t.stop());
-        setError(
-          "Please share your entire screen, not a window or tab. Click \"Share Screen\" and select \"Entire Screen\"."
-        );
+        setError(ui.screen.wrongSurface);
         return;
       }
 
@@ -1031,9 +1034,9 @@ function ScreenCheck({
       videoEl.srcObject = null;
       onDone();
     } catch {
-      setError("Screen capture was denied or cancelled.");
+      setError(ui.screen.denied);
     }
-  }, [onDone]);
+  }, [onDone, ui.screen.denied, ui.screen.wrongSurface]);
 
   if (!isSupported) {
     return (
@@ -1044,17 +1047,14 @@ function ScreenCheck({
               <Monitor className="h-5 w-5 text-muted-foreground" />
             </div>
             <div className="flex-1 space-y-1">
-              <p className="text-sm font-medium">Screen sharing unavailable</p>
-              <p className="text-xs text-muted-foreground">
-                Screen sharing requires a desktop browser (Chrome recommended).
-                This step has been automatically skipped on your device.
-              </p>
+              <p className="text-sm font-medium">{ui.screen.unavailableTitle}</p>
+              <p className="text-xs text-muted-foreground">{ui.screen.unavailableDesc}</p>
             </div>
           </div>
           <div className="flex shrink-0 items-center self-start pt-0.5">
             <span className="flex items-center gap-1.5 text-sm font-medium text-secondary-600 dark:text-secondary-400">
               <CheckCircle2 className="h-4 w-4" />
-              Skipped
+              {ui.screen.skipped}
             </span>
           </div>
         </CardContent>
@@ -1078,7 +1078,7 @@ function ScreenCheck({
               <div className="flex flex-col items-center gap-2">
                 <ScreenShare className="h-10 w-10 text-muted-foreground/30" />
                 <span className="text-[11px] text-muted-foreground/50">
-                  Entire screen
+                  {ui.screen.entireScreen}
                 </span>
               </div>
             )}
@@ -1086,42 +1086,34 @@ function ScreenCheck({
           {!done && (
             <Button size="sm" onClick={requestShare} className="w-full">
               <Monitor className="mr-1.5 h-3.5 w-3.5" />
-              Share Screen
+              {ui.screen.shareScreen}
             </Button>
           )}
         </div>
 
         <div className="flex-1 space-y-2">
-          <p className="text-sm font-medium">
-            Screen capture requires authorization.
-          </p>
-          <p className="text-xs text-muted-foreground">
-            After clicking &quot;Share Screen&quot;, please select{" "}
-            <span className="font-medium text-foreground">
-              &quot;Entire Screen&quot;
-            </span>{" "}
-            in the pop-up window and click &quot;Share&quot;.
-          </p>
+          <p className="text-sm font-medium">{ui.screen.authTitle}</p>
+          <p className="text-xs text-muted-foreground">{ui.screen.authHint}</p>
           {error && (
             <div className="flex items-center gap-1.5 rounded-md bg-destructive/10 px-2.5 py-1.5 text-xs text-destructive">
               <AlertCircle className="h-3.5 w-3.5 shrink-0" />
               <span>{error}</span>
               <button type="button" className="ml-auto font-medium underline" onClick={requestShare}>
-                Retry
+                {ui.common.retry}
               </button>
             </div>
           )}
           {allowSkip && !error && !done && (
             <p className="text-xs text-muted-foreground">
-              Can&apos;t share screen?{" "}
+              {ui.screen.cantShare}{" "}
               <button type="button" className="font-medium text-primary hover:underline" onClick={() => setShowSkipDialog(true)}>
-                Skip
+                {ui.common.skip}
               </button>
             </p>
           )}
           {!allowSkip && !error && !done && (
             <p className="text-xs text-amber-600 dark:text-amber-400">
-              Screen sharing is required for this interview.
+              {ui.screen.required}
             </p>
           )}
         </div>
@@ -1130,12 +1122,12 @@ function ScreenCheck({
           {done ? (
             <span className="flex items-center gap-1.5 text-sm font-medium text-secondary-600 dark:text-secondary-400">
               <CheckCircle2 className="h-4 w-4" />
-              Screen Capture
+              {ui.screen.label}
             </span>
           ) : (
             <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
               <div className="h-4 w-4 rounded-full border-2" />
-              Screen Capture
+              {ui.screen.label}
             </span>
           )}
         </div>
@@ -1143,17 +1135,13 @@ function ScreenCheck({
       <AlertDialog open={showSkipDialog} onOpenChange={setShowSkipDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Skip screen sharing?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Skipping screen sharing is not recommended. Screen capture is used
-              to monitor your interview environment. Skipping may affect your
-              interview results.
-            </AlertDialogDescription>
+            <AlertDialogTitle>{ui.screen.skipTitle}</AlertDialogTitle>
+            <AlertDialogDescription>{ui.screen.skipDesc}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Go back</AlertDialogCancel>
+            <AlertDialogCancel>{ui.common.goBack}</AlertDialogCancel>
             <AlertDialogAction onClick={() => { setScreenSkipped(true); onDone(); }}>
-              Skip anyway
+              {ui.common.skipAnyway}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1175,8 +1163,15 @@ export function IntervieweeOnboarding({
   questionTypes = [],
   onComplete,
 }: IntervieweeOnboardingProps) {
+  const ui = useMemo(() => getIntervieweeUi(language), [language]);
   const [step, setStep] = useState<OnboardingStep>("info");
   const [agreed, setAgreed] = useState(false);
+
+  useBrandDocumentTitle(interviewTitle);
+
+  useEffect(() => {
+    document.documentElement.lang = ui.htmlLang;
+  }, [ui.htmlLang]);
 
   const [cameraDone, setCameraDone] = useState(false);
   const [micDone, setMicDone] = useState(false);
@@ -1192,10 +1187,7 @@ export function IntervieweeOnboarding({
 
   const header = (
     <header className="sticky top-0 z-50 flex h-14 items-center border-b bg-card px-4 sm:px-6">
-      <div className="flex items-center gap-1">
-        <AuralLogo size={28} className="shrink-0" />
-        <span className="font-heading text-base font-bold tracking-[2px]">AURAL</span>
-      </div>
+      <BrandMark size={28} language={language} />
     </header>
   );
 
@@ -1203,7 +1195,7 @@ export function IntervieweeOnboarding({
     return (
       <div className="flex min-h-screen flex-col bg-muted/30">
         {header}
-        <StepIndicator current="info" />
+        <StepIndicator current="info" ui={ui} />
         <div className="mx-auto w-full max-w-2xl flex-1 px-4 pb-8 sm:px-6">
           <Card>
             <CardContent className="p-4 sm:p-6">
@@ -1211,95 +1203,38 @@ export function IntervieweeOnboarding({
 
               <div className="mt-4 flex gap-6 text-sm">
                 <div>
-                  <span className="font-medium">Description</span>
+                  <span className="font-medium">{ui.description}</span>
                   <p className="mt-1 text-muted-foreground">
-                    {interviewDescription || "No additional description."}
+                    {interviewDescription || ui.noDescription}
                   </p>
                 </div>
               </div>
 
               <div className="mt-2 text-sm text-muted-foreground">
-                {questionCount} questions &middot;{" "}
-                {timeLimitMinutes
-                  ? `${timeLimitMinutes} min`
-                  : "No time limit"}
+                {ui.formatQuestionsMeta(questionCount, timeLimitMinutes)}
               </div>
             </CardContent>
           </Card>
 
           <Card className="mt-4">
             <CardContent className="space-y-3 p-4 sm:p-6">
-              <h3 className="font-semibold">Integrity Notices</h3>
+              <h3 className="font-semibold">{ui.integrityTitle}</h3>
               {antiCheatingEnabled ? (
                 <>
                   <div className="rounded-md bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
-                    To ensure fairness, the following integrity measures will be
-                    actively enforced throughout this session.
+                    {ui.integrityAntiCheatBanner}
                   </div>
                   <ol className="list-inside list-decimal space-y-2 text-sm text-muted-foreground">
-                    <li>
-                      To ensure that the interview runs properly, please use the
-                      latest version of Chrome.
-                    </li>
-                    <li>
-                      After completing your answers, please make sure that you have
-                      submitted them to all questions. Otherwise it will affect your
-                      results.
-                    </li>
-                    <li>
-                      <span className="font-medium text-foreground">Tab switching and focus tracking:</span>{" "}
-                      Leaving the interview page or switching to another window will
-                      be automatically detected and recorded. If you leave more
-                      than{" "}
-                      <span className="font-medium text-primary">3</span> times,
-                      your session will be flagged for review.
-                    </li>
-                    <li>
-                      <span className="font-medium text-foreground">External paste blocked:</span>{" "}
-                      Pasting content from outside the interview page is not
-                      allowed. You can copy and paste freely within the page.
-                    </li>
-                    <li>
-                      <span className="font-medium text-foreground">Multiple screen detection:</span>{" "}
-                      The system will detect if you have multiple monitors connected.
-                      Please unplug or turn off additional screens before starting.
-                    </li>
-                    <li>
-                      This interview requires a camera to collect your registration
-                      photo and capture your behavior. All photos are privacy
-                      protected.
-                    </li>
-                    <li>
-                      The interview will screen capture throughout. Screen capture
-                      requires authorization.
-                    </li>
+                    {ui.integrityItemsAntiCheat.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
                   </ol>
                 </>
               ) : (
                 <ol className="list-inside list-decimal space-y-2 text-sm text-muted-foreground">
-                  <li>
-                    To ensure that the interview runs properly, please use the
-                    latest version of Chrome.
-                  </li>
-                  <li>
-                    After completing your answers, please make sure that you have
-                    submitted them to all questions. Otherwise it will affect your
-                    results.
-                  </li>
-                  <li>
-                    Before the interview starts, please shut down any software or
-                    web page with ads, message pop-ups. Please do not leave the
-                    interview page during the whole process.
-                  </li>
-                  <li>
-                    This interview requires a camera to collect your registration
-                    photo and capture your behavior. All photos are privacy
-                    protected.
-                  </li>
-                  <li>
-                    The interview will screen capture throughout. Screen capture
-                    requires authorization.
-                  </li>
+                  {ui.integrityItemsStandard.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
                 </ol>
               )}
             </CardContent>
@@ -1311,14 +1246,14 @@ export function IntervieweeOnboarding({
                 checked={agreed}
                 onCheckedChange={(v) => setAgreed(v === true)}
               />
-              I agree to the above notice and interview guidelines
+              {ui.agreeNotice}
             </label>
             <Button
               disabled={!agreed}
               onClick={() => setStep("checklist")}
               className="w-40"
             >
-              Next
+              {ui.next}
             </Button>
           </div>
         </div>
@@ -1327,7 +1262,12 @@ export function IntervieweeOnboarding({
   }
 
   if (starting) {
-    return <PreparingScreen />;
+    return (
+      <PreparingScreen
+        title={ui.preparingTitle}
+        description={ui.preparingDesc}
+      />
+    );
   }
 
   if (step === "howItWorks") {
@@ -1350,8 +1290,8 @@ export function IntervieweeOnboarding({
     };
 
     return (
-      <IntervieweeTourProvider mode="voice">
-        <PreviewWrapper onReady={handleComplete}>
+      <IntervieweeTourProvider mode="voice" language={language}>
+        <PreviewWrapper onReady={handleComplete} ui={ui}>
           <VoiceInterface
             sessionId="__preview__"
             interviewId="__preview__"
@@ -1373,15 +1313,15 @@ export function IntervieweeOnboarding({
   return (
     <div className="flex min-h-screen flex-col bg-muted/30">
       {header}
-      <StepIndicator current="checklist" />
+      <StepIndicator current="checklist" ui={ui} />
       <div className="mx-auto w-full max-w-2xl flex-1 space-y-4 px-4 pb-8">
-        <CameraCheck done={cameraDone} onDone={() => setCameraDone(true)} allowSkip={!antiCheatingEnabled} />
-        <MicCheck done={micDone} onDone={() => setMicDone(true)} language={language} allowSkip={!antiCheatingEnabled} />
-        <ScreenCheck done={screenDone} onDone={() => setScreenDone(true)} allowSkip={!antiCheatingEnabled} />
+        <CameraCheck done={cameraDone} onDone={() => setCameraDone(true)} allowSkip={!antiCheatingEnabled} ui={ui} />
+        <MicCheck done={micDone} onDone={() => setMicDone(true)} language={language} allowSkip={!antiCheatingEnabled} ui={ui} />
+        <ScreenCheck done={screenDone} onDone={() => setScreenDone(true)} allowSkip={!antiCheatingEnabled} ui={ui} />
 
         <div className="flex items-center justify-center gap-3 pt-4">
           <Button variant="outline" onClick={() => setStep("info")}>
-            Back
+            {ui.back}
           </Button>
           <Button
             disabled={!allChecksDone}
@@ -1390,11 +1330,11 @@ export function IntervieweeOnboarding({
               else onComplete();
             }}
           >
-            Next
+            {ui.next}
           </Button>
         </div>
         <p className="text-center text-xs text-muted-foreground">
-          Chrome is recommended for a better experience.
+          {ui.chromeTip}
         </p>
       </div>
     </div>

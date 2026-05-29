@@ -56,7 +56,7 @@ export function LoginForm() {
   };
 
   return (
-    <Card>
+    <Card className="border-0 bg-background/95 shadow-xl backdrop-blur-sm lg:border lg:shadow-2xl">
       <CardHeader className="text-center">
         <AuralLogo size={64} className="mx-auto mb-2" />
         <CardTitle className="font-heading text-2xl">
@@ -87,11 +87,21 @@ export function LoginForm() {
               required
             />
           </div>
-          <Button className="w-full" type="submit" disabled={loading}>
+          <Button className="w-full transition-transform hover:scale-[1.01]" type="submit" disabled={loading}>
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {t("auth.signIn")}
           </Button>
         </form>
+        <div
+          className="mt-4 rounded-lg border border-dashed border-primary/30 bg-primary/5 px-3 py-2 text-center text-xs text-muted-foreground"
+          role="note"
+        >
+          <p className="font-medium text-foreground">{t("auth.demoHintTitle")}</p>
+          <p className="mt-1 font-mono">
+            {t("auth.demoEmail")} / {t("auth.demoPassword")}
+          </p>
+          <p className="mt-1">{t("auth.demoNote")}</p>
+        </div>
       </CardContent>
       <CardFooter className="justify-center">
         <p className="text-sm text-muted-foreground">

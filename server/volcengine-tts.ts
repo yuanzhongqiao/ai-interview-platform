@@ -327,6 +327,9 @@ export async function* synthesizeSpeech(
   const startMs = Date.now();
   let loggedJsonMeta = false;
   let audioStarted = false;
+  log.info(
+    `TTS HTTP start: resource=${auth.resourceId}, speaker=${options.speaker}, textLen=${text.length}, format=${ttsFormat}`,
+  );
 
   const controller = new AbortController();
   let timeoutId: NodeJS.Timeout | undefined;

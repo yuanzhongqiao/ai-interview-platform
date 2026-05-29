@@ -1,13 +1,19 @@
-import type { DocArticle } from "./types";
+﻿import type { DocArticle } from "./types";
 import { DocCallout } from "@/components/docs/doc-callout";
 import { DocImage } from "@/components/docs/doc-image";
+import { resultsAnalysisAndExportContentJa } from "./ja/results-analytics";
+import { resultsAnalysisAndExportContentZh } from "./zh/results-analytics";
 
 export const resultsAnalyticsArticles: DocArticle[] = [
   {
     slug: "results-analysis-and-export",
     categorySlug: "results-analytics",
     title: "Results, Analysis, and Export",
+    titleZh: "结果、分析与导出",
     description: "Session list, AI analysis, research findings, and downloading data",
+    descriptionZh: "会话列表、AI 分析、研究发现与数据下载",
+    titleJa: "結果、分析、エクスポート",
+    descriptionJa: "文字起こし、AI インサイト、レポートエクスポート",
     audience: "creators",
     order: 1,
     content: () => (
@@ -30,7 +36,7 @@ export const resultsAnalyticsArticles: DocArticle[] = [
 
         <h2>AI Analysis</h2>
         <p>
-          After a candidate completes a session, Aural automatically produces:
+          After a candidate completes a session, Lingwu automatically produces:
         </p>
         <ul>
           <li><strong>Session summary</strong> — a concise overview of performance, communication style, and key themes</li>
@@ -54,7 +60,7 @@ export const resultsAnalyticsArticles: DocArticle[] = [
 
         <h3>Research Findings</h3>
         <p>
-          For interviews with research-type questions, Aural also extracts structured findings: <strong>topics</strong> (themes, pain points, preferences) and <strong>data points</strong> (specific facts, numbers, or statements). Topics help you spot patterns across sessions; data points give you quotable evidence for reports.
+          For interviews with research-type questions, Lingwu also extracts structured findings: <strong>topics</strong> (themes, pain points, preferences) and <strong>data points</strong> (specific facts, numbers, or statements). Topics help you spot patterns across sessions; data points give you quotable evidence for reports.
         </p>
 
         <DocImage src="/images/docs/research-findings.webp" alt="Research Findings showing extracted key topics and detailed data points from a research interview" />
@@ -65,7 +71,7 @@ export const resultsAnalyticsArticles: DocArticle[] = [
 
         <h3>Tone &amp; Communication</h3>
         <p>
-          Aural analyzes the candidate&apos;s communication style across every response — detecting confidence level, tone consistency, and clarity. Each question is rated for tone (e.g., Confident, Neutral) and impact (High, Low), giving you a quick read on how the candidate communicates under interview conditions.
+          Lingwu analyzes the candidate&apos;s communication style across every response — detecting confidence level, tone consistency, and clarity. Each question is rated for tone (e.g., Confident, Neutral) and impact (High, Low), giving you a quick read on how the candidate communicates under interview conditions.
         </p>
 
         <DocImage src="/images/docs/tone-communication.webp" alt="Tone and Communication analysis with per-question confidence and impact ratings" />
@@ -86,5 +92,7 @@ export const resultsAnalyticsArticles: DocArticle[] = [
         </ul>
       </>
     ),
+    contentZh: resultsAnalysisAndExportContentZh,
+    contentJa: resultsAnalysisAndExportContentJa,
   },
 ];

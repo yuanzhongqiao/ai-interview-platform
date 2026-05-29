@@ -1,7 +1,15 @@
 "use client";
 
-import { useAppLocale } from "@/components/app-locale-provider";
+import { useAppLocale, type AppLocale } from "@/components/app-locale-provider";
 import { cn } from "@/lib/utils";
+
+const LOCALE_OPTIONS: AppLocale[] = ["en", "zh", "ja"];
+
+const LOCALE_LABEL_KEYS: Record<AppLocale, string> = {
+  en: "common.english",
+  zh: "common.chinese",
+  ja: "common.japanese",
+};
 
 export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
   const { locale, setLocale, t } = useAppLocale();
@@ -13,19 +21,19 @@ export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
         compact && "scale-95",
       )}
     >
-      {(["en", "zh"] as const).map((option) => (
+      {LOCALE_OPTIONS.map((option) => (
         <button
           key={option}
           type="button"
           onClick={() => setLocale(option)}
           className={cn(
-            "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+            "rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors",
             locale === option
               ? "bg-primary text-primary-foreground"
               : "text-muted-foreground hover:text-foreground",
           )}
         >
-          {option === "en" ? t("common.english") : t("common.chinese")}
+          {t(LOCALE_LABEL_KEYS[option])}
         </button>
       ))}
     </div>

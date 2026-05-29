@@ -1,19 +1,27 @@
 "use client";
 
-import React, {
-    createContext,
-    useCallback,
-    useContext,
-    useEffect,
-    useMemo,
-    useState,
-} from "react";
 import {
-    CHAT_TOUR_STEPS,
-    markTourCompleted,
-    VOICE_TOUR_STEPS,
-    type IntervieweeTourStep,
-} from "./interviewee-tour-steps";
+  getChatTourSteps,
+  getIntervieweeUi,
+  getVoiceTourSteps,
+} from "@/lib/i18n/interviewee-ui";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import { markTourCompleted, type IntervieweeTourStep } from "./interviewee-tour-steps";
+
+interface TourLabels {
+  skipTour: string;
+  back: string;
+  next: string;
+  done: string;
+  formatStepOf: (index: number, total: number) => string;
+}
 
 interface IntervieweeTourContextValue {
   active: boolean;
@@ -22,6 +30,7 @@ interface IntervieweeTourContextValue {
   currentStep: IntervieweeTourStep | null;
   stepIndex: number;
   totalSteps: number;
+  labels: TourLabels;
   next: () => void;
   prev: () => void;
   skip: () => void;
@@ -37,15 +46,34 @@ export function useIntervieweeTour() {
 
 export function IntervieweeTourProvider({
   mode,
+  language,
   startImmediately = false,
   children,
 }: {
   mode: "voice" | "chat";
+  language?: string;
   /** Start the tour right away (used by the preview layout) */
   startImmediately?: boolean;
   children: React.ReactNode;
 }) {
-  const steps = mode === "voice" ? VOICE_TOUR_STEPS : CHAT_TOUR_STEPS;
+  const steps = useMemo(
+    () =>
+      mode === "voice"
+        ? getVoiceTourSteps(language)
+        : getChatTourSteps(language),
+    [mode, language],
+  );
+  const labels = useMemo(() => {
+    const ui = getIntervieweeUi(language);
+    return {
+      skipTour: ui.tour.skipTour,
+      back: ui.tour.back,
+      next: ui.tour.next,
+      done: ui.tour.done,
+      formatStepOf: ui.tour.formatStepOf,
+    };
+  }, [language]);
+
   const [active, setActive] = useState(false);
   const [finished, setFinished] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
@@ -100,7 +128,7 @@ export function IntervieweeTourProvider({
     setActive(true);
   }, []);
 
-  const currentStep = active ? steps[stepIndex] ?? null : null;
+  const currentStep = active ? (steps[stepIndex] ?? null) : null;
 
   const value = useMemo(
     () => ({
@@ -110,12 +138,24 @@ export function IntervieweeTourProvider({
       currentStep,
       stepIndex,
       totalSteps: steps.length,
+      labels,
       next,
       prev,
       skip,
       restart,
     }),
-    [active, finished, steps, currentStep, stepIndex, next, prev, skip, restart],
+    [
+      active,
+      finished,
+      steps,
+      currentStep,
+      stepIndex,
+      labels,
+      next,
+      prev,
+      skip,
+      restart,
+    ],
   );
 
   return (

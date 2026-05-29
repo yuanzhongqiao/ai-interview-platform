@@ -1,20 +1,26 @@
-import type { DocArticle } from "./types";
+﻿import type { DocArticle } from "./types";
 import { DocCallout } from "@/components/docs/doc-callout";
 import { DocImage } from "@/components/docs/doc-image";
+import { organizationsMembersAndRolesContentJa } from "./ja/teams-organizations";
+import { organizationsMembersAndRolesContentZh } from "./zh/teams-organizations";
 
 export const teamsOrganizationsArticles: DocArticle[] = [
   {
     slug: "organizations-members-and-roles",
     categorySlug: "teams-organizations",
     title: "Organizations, Members, and Roles",
+    titleZh: "组织、成员与角色",
     description: "Organizations, projects, team members, and role management",
+    descriptionZh: "组织、项目、团队成员与角色管理",
+    titleJa: "組織、メンバー、ロール",
+    descriptionJa: "組織、プロジェクト、チームメンバー、ロール管理",
     audience: "creators",
     order: 1,
     content: () => (
       <>
         <h2>Organizations</h2>
         <p>
-          An organization is the top-level account that owns all interviews, questions, and sessions. When you sign up, Aural creates a <strong>Personal</strong> organization for you automatically.
+          An organization is the top-level account that owns all interviews, questions, and sessions. When you sign up, Lingwu creates a <strong>Personal</strong> organization for you automatically.
         </p>
         <p>
           You can create additional organizations (e.g., one per company) and switch between them from the sidebar breadcrumb.
@@ -37,7 +43,7 @@ export const teamsOrganizationsArticles: DocArticle[] = [
         </p>
         <DocImage src="/images/docs/org-members.webp" alt="Organization Members page with member table and Add Member button" />
         <p>
-          Click <strong>+ Add member</strong>, enter the person&apos;s email address, and choose a role. If they don&apos;t have an Aural account yet, they&apos;ll receive an invitation.
+          Click <strong>+ Add member</strong>, enter the person&apos;s email address, and choose a role. If they don&apos;t have an Lingwu account yet, they&apos;ll receive an invitation.
         </p>
 
         <h3>Roles</h3>
@@ -55,5 +61,7 @@ export const teamsOrganizationsArticles: DocArticle[] = [
         </DocCallout>
       </>
     ),
+    contentZh: organizationsMembersAndRolesContentZh,
+    contentJa: organizationsMembersAndRolesContentJa,
   },
 ];

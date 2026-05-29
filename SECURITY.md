@@ -15,7 +15,7 @@ Please do not open public issues for security vulnerabilities. Public disclosure
 
 ### How to Report
 
-Report security vulnerabilities by emailing **security@aural-ai.com**.
+Report security vulnerabilities via your deployment operator or the GitCC open-source community page linked from the project README.
 
 ### What to Include in Your Report
 

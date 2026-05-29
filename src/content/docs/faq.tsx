@@ -1,25 +1,31 @@
-import type { DocArticle } from "./types";
+﻿import type { DocArticle } from "./types";
+import { generalFaqContentJa } from "./ja/faq";
+import { generalFaqContentZh } from "./zh/faq";
 
 export const faqArticles: DocArticle[] = [
   {
     slug: "general",
     categorySlug: "faq",
     title: "General FAQ",
-    description: "Common questions about Aural",
+    titleZh: "常见问题",
+    description: "Common questions about Lingwu",
+    descriptionZh: "关于聆悟的常见问题",
+    titleJa: "よくある質問",
+    descriptionJa: "Lingwu に関するよくある質問",
     audience: "both",
     order: 1,
     content: () => (
       <>
         <h2>General Questions</h2>
 
-        <h3>Can I use Aural for free?</h3>
+        <h3>Can I use Lingwu for free?</h3>
         <p>
-          Yes. Aural is open-source and all features are available without any usage limits. You only need to provide your own AI provider API keys (e.g. OpenAI, Kimi, MiniMax).
+          Yes. Lingwu is open-source and all features are available without any usage limits. You only need to provide your own AI provider API keys (e.g. OpenAI, Kimi, MiniMax).
         </p>
 
         <h3>What languages are supported?</h3>
         <p>
-          You can configure the interview language when creating a template. The AI conducts the session and evaluates responses in the selected language. Supported languages include English, Chinese, Spanish, French, German, and others.
+          You can configure the interview language when creating a template. The AI conducts the session and evaluates responses in the selected language. Supported languages include English, Chinese, Japanese, Spanish, French, German, and others.
         </p>
 
         <h3>What is the maximum interview duration?</h3>
@@ -29,7 +35,7 @@ export const faqArticles: DocArticle[] = [
 
         <h3>What browsers and devices are supported?</h3>
         <p>
-          Chrome on desktop is recommended for full voice, video, and interactive tool support. Safari and Firefox generally work but may have limitations. Mobile browsers can run Aural, though a desktop is recommended for critical interviews.
+          Chrome on desktop is recommended for full voice, video, and interactive tool support. Safari and Firefox generally work but may have limitations. Mobile browsers can run Lingwu, though a desktop is recommended for critical interviews.
         </p>
 
         <h3>Is my data secure?</h3>
@@ -39,7 +45,7 @@ export const faqArticles: DocArticle[] = [
 
         <h3>What happens if I lose connection during an interview?</h3>
         <p>
-          Aural saves your progress automatically. Return to the same interview link to resume where you left off. The interviewer can also view any data captured before the disconnection.
+          Lingwu saves your progress automatically. Return to the same interview link to resume where you left off. The interviewer can also view any data captured before the disconnection.
         </p>
 
         <h3>How long is my data retained?</h3>
@@ -48,5 +54,7 @@ export const faqArticles: DocArticle[] = [
         </p>
       </>
     ),
+    contentZh: generalFaqContentZh,
+    contentJa: generalFaqContentJa,
   },
 ];

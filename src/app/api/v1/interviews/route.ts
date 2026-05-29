@@ -118,7 +118,7 @@ export async function POST(request: Request) {
   const chatEnabled = typeof body.chatEnabled === "boolean" ? body.chatEnabled : true;
   const voiceEnabled = typeof body.voiceEnabled === "boolean" ? body.voiceEnabled : false;
   const videoEnabled = typeof body.videoEnabled === "boolean" ? body.videoEnabled : false;
-  const aiName = typeof body.aiName === "string" && body.aiName.trim() ? body.aiName.trim() : "Aural";
+  const aiName = typeof body.aiName === "string" && body.aiName.trim() ? body.aiName.trim() : "聆悟";
   const aiTone = body.aiTone === "CASUAL" || body.aiTone === "PROFESSIONAL" || body.aiTone === "FORMAL" || body.aiTone === "FRIENDLY" ? body.aiTone : "PROFESSIONAL";
   const followUpDepth = body.followUpDepth === "LIGHT" || body.followUpDepth === "MODERATE" || body.followUpDepth === "DEEP" ? body.followUpDepth : "MODERATE";
   const language = typeof body.language === "string" && body.language.trim() ? body.language.trim() : "en";

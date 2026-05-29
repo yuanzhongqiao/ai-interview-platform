@@ -1,6 +1,7 @@
 export const LANGUAGES = [
   { value: "en", label: "English" },
   { value: "zh", label: "Chinese (中文)" },
+  { value: "ja", label: "Japanese (日本語)" },
   { value: "es", label: "Spanish" },
   { value: "fr", label: "French" },
 ] as const;

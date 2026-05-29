@@ -8,6 +8,7 @@ import { usePathname, useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useState } from "react";
 import { useOrg } from "@/components/org-provider";
 import { useProject } from "@/components/project-provider";
+import { LanguageSwitcher } from "@/components/language-switcher";
 import { useTourSafe } from "@/components/tour/tour-provider";
 import { TourChecklist } from "@/components/tour/tour-checklist";
 import { Button } from "@/components/ui/button";
@@ -172,6 +173,8 @@ export function Header({ sidebarToggle }: { sidebarToggle?: React.ReactNode }) {
     questions: t("header.questions"),
     account: t("header.accountSettings"),
     usage: t("header.usage"),
+    practices: t("header.practices"),
+    prep: t("header.practices"),
   };
   const ORG_SEGMENT_LABELS: Record<string, string> = {
     settings: t("header.organizationSettings"),
@@ -247,7 +250,7 @@ export function Header({ sidebarToggle }: { sidebarToggle?: React.ReactNode }) {
   }
 
   return (
-    <header className="flex h-14 items-center border-b bg-background px-4">
+    <header className="flex h-14 items-center border-b border-border/80 bg-background/90 px-4 backdrop-blur-md">
       <div className="flex items-center gap-1">
         {sidebarToggle}
 
@@ -288,7 +291,8 @@ export function Header({ sidebarToggle }: { sidebarToggle?: React.ReactNode }) {
           </nav>
         )}
       </div>
-      <div className="ml-auto relative" style={{ zIndex: 10002 }}>
+      <div className="ml-auto flex items-center gap-2 relative" style={{ zIndex: 10002 }}>
+        <LanguageSwitcher compact />
         <TourHeaderButton />
       </div>
     </header>

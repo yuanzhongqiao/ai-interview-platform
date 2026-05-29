@@ -1,19 +1,25 @@
+"use client";
+
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
+import { useAppLocale } from "@/components/app-locale-provider";
+import { getDocsUi } from "@/lib/i18n/docs-ui";
 
-interface Crumb {
-  label: string;
-  href?: string;
-}
+export function DocsBreadcrumbs({
+  crumbs,
+}: {
+  crumbs: { label: string; href?: string }[];
+}) {
+  const { locale } = useAppLocale();
+  const ui = getDocsUi(locale);
 
-export function DocsBreadcrumbs({ crumbs }: { crumbs: Crumb[] }) {
   return (
-    <nav className="flex items-center gap-1.5 text-sm text-mk-text-secondary">
+    <nav className="flex items-center gap-1.5 text-sm text-muted-foreground">
       <Link
         href="/docs"
-        className="hover:text-mk-terracotta transition-colors"
+        className="hover:text-primary transition-colors"
       >
-        Docs
+        {ui.docsHome()}
       </Link>
       {crumbs.map((crumb, i) => (
         <span key={i} className="flex items-center gap-1.5">
@@ -21,12 +27,12 @@ export function DocsBreadcrumbs({ crumbs }: { crumbs: Crumb[] }) {
           {crumb.href ? (
             <Link
               href={crumb.href}
-              className="hover:text-mk-terracotta transition-colors"
+              className="hover:text-primary transition-colors"
             >
               {crumb.label}
             </Link>
           ) : (
-            <span className="text-mk-text font-medium">{crumb.label}</span>
+            <span className="text-foreground font-medium">{crumb.label}</span>
           )}
         </span>
       ))}

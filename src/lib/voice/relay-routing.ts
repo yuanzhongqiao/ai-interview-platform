@@ -125,6 +125,54 @@ function isLocalBrowserHost(browserHost?: string): boolean {
   );
 }
 
+function isLocalRelayHost(hostname: string): boolean {
+  const normalized = hostname.replace(/^\[|\]$/g, "").toLowerCase();
+  return (
+    normalized === "localhost" ||
+    normalized === "127.0.0.1" ||
+    normalized === "::1"
+  );
+}
+
+/** Nginx 反代到根路径的独立中继地址（如 ws://39.96.156.217），无 /ws/voice 路径 */
+function isDedicatedRelayRootUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    const rootPath = parsed.pathname === "/" || parsed.pathname === "";
+    return rootPath && !isLocalRelayHost(parsed.hostname);
+  } catch {
+    return false;
+  }
+}
+
+/** 将误配的 http(s):// 转为 ws(s):// */
+function normalizeRelayScheme(url: string): string {
+  if (url.startsWith("https://")) return `wss://${url.slice("https://".length)}`;
+  if (url.startsWith("http://")) return `ws://${url.slice("http://".length)}`;
+  return url;
+}
+
+function effectiveConfiguredRelayUrl(
+  relayUrl: string | undefined,
+  browserHost?: string
+): string | undefined {
+  if (!relayUrl) return undefined;
+  relayUrl = normalizeRelayScheme(relayUrl);
+  if (
+    browserHost &&
+    !isLocalBrowserHost(browserHost)
+  ) {
+    try {
+      if (isLocalRelayHost(new URL(relayUrl).hostname)) {
+        return undefined;
+      }
+    } catch {
+      return relayUrl;
+    }
+  }
+  return relayUrl;
+}
+
 export function resolveRelayUrls(options: RelayUrlOptions): {
   voiceRelayUrl: string;
   openAiRelayUrl: string;
@@ -134,8 +182,17 @@ export function resolveRelayUrls(options: RelayUrlOptions): {
     !!options.browserHost &&
     !isLocalBrowserHost(options.browserHost);
 
+  const configuredVoiceRelayUrl = effectiveConfiguredRelayUrl(
+    options.voiceRelayUrl,
+    options.browserHost
+  );
+  const configuredOpenAiRelayUrl = effectiveConfiguredRelayUrl(
+    options.openAiRelayUrl,
+    options.browserHost
+  );
+
   const voiceRelayUrl =
-    options.voiceRelayUrl ||
+    configuredVoiceRelayUrl ||
     (shouldUseSameOriginProxy
       ? deriveUrlFromBrowser(
           options.browserProtocol,
@@ -153,14 +210,19 @@ export function resolveRelayUrls(options: RelayUrlOptions): {
     `ws://localhost:${DEFAULT_VOICE_RELAY_PORT}`;
 
   const openAiRelayUrl =
-    options.openAiRelayUrl ||
+    configuredOpenAiRelayUrl ||
     (() => {
+      // 生产：独立 IP/域名 + 根路径中继（Nginx -> 4011），不再拼 /ws/openai-voice
+      if (isDedicatedRelayRootUrl(voiceRelayUrl)) {
+        return voiceRelayUrl;
+      }
       try {
         const voiceUrl = new URL(voiceRelayUrl);
-        if (
-          shouldUseSameOriginProxy ||
-          (!voiceUrl.port && voiceUrl.pathname === DEFAULT_VOICE_RELAY_PATH)
-        ) {
+        const pathBasedOpenAi =
+          voiceUrl.pathname === DEFAULT_VOICE_RELAY_PATH &&
+          (shouldUseSameOriginProxy ||
+            (!voiceUrl.port && !isLocalRelayHost(voiceUrl.hostname)));
+        if (pathBasedOpenAi) {
           return deriveSiblingRelayUrl(voiceRelayUrl, {
             pathname: DEFAULT_OPENAI_RELAY_PATH,
           });

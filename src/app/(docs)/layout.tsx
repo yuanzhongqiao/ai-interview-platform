@@ -4,7 +4,7 @@ export default function DocsLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-mk-bg flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col">
       {children}
     </div>
   );

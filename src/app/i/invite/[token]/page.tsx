@@ -56,9 +56,16 @@ export default function InvitePage() {
     }
   }, [candidate.data, completed, createSession, token, goToSession]);
 
+  const interviewTitle =
+    candidate.data?.interview &&
+    typeof candidate.data.interview === "object" &&
+    "title" in candidate.data.interview
+      ? String((candidate.data.interview as { title: string }).title)
+      : undefined;
+
   // Loading
   if (candidate.isLoading) {
-    return <PreparingScreen />;
+    return <PreparingScreen pageTitle={interviewTitle} />;
   }
 
   // Error / invalid token
@@ -99,5 +106,5 @@ export default function InvitePage() {
   }
 
   // Creating session
-  return <PreparingScreen />;
+  return <PreparingScreen pageTitle={interviewTitle} />;
 }

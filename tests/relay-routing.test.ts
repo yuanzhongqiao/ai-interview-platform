@@ -149,6 +149,40 @@ test("Same-origin voice relay URL derives a same-origin OpenAI relay path", () =
   assert.equal(urls.openAiRelayUrl, "wss://aural-ai.com/ws/openai-voice");
 });
 
+test("Dedicated relay root URL does not append /ws/openai-voice on production browser", () => {
+  const urls = resolveRelayUrls({
+    voiceRelayUrl: "wss://voice.gitgg.com",
+    openAiRelayUrl: "wss://voice.gitgg.com",
+    browserProtocol: "http:",
+    browserHost: "gitgg.com",
+  });
+
+  assert.equal(urls.voiceRelayUrl, "wss://voice.gitgg.com");
+  assert.equal(urls.openAiRelayUrl, "wss://voice.gitgg.com");
+});
+
+test("http(s) relay env URLs normalize to ws(s)", () => {
+  const urls = resolveRelayUrls({
+    voiceRelayUrl: "https://voice.gitgg.com",
+    openAiRelayUrl: "https://voice.gitgg.com",
+  });
+
+  assert.equal(urls.voiceRelayUrl, "wss://voice.gitgg.com");
+  assert.equal(urls.openAiRelayUrl, "wss://voice.gitgg.com");
+});
+
+test("Baked localhost relay URLs are ignored on non-local browser hosts", () => {
+  const urls = resolveRelayUrls({
+    voiceRelayUrl: "ws://localhost:4011",
+    openAiRelayUrl: "ws://localhost:4011/ws/openai-voice",
+    browserProtocol: "http:",
+    browserHost: "gitgg.com",
+  });
+
+  assert.equal(urls.voiceRelayUrl, "ws://gitgg.com/ws/voice");
+  assert.equal(urls.openAiRelayUrl, "ws://gitgg.com/ws/openai-voice");
+});
+
 test("RelayConnector falls back to the secondary relay when the primary never becomes ready", async () => {
   const sockets: FakeSocket[] = [];
   const connector = new RelayConnector<Record<string, unknown>>({

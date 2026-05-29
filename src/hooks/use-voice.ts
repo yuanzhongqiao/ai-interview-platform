@@ -121,8 +121,12 @@ export function useVoice({
   const relayConnectorRef = useRef<RelayConnector<Record<string, unknown>> | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const processorRef = useRef<any>(null);
+  const micCaptureRef = useRef<{
+    worklet: AudioWorkletNode;
+    source: MediaStreamAudioSourceNode;
+    ctx: AudioContext;
+    silentGain: GainNode;
+  } | null>(null);
   const playTimeRef = useRef(0);
   const audioSourcesRef = useRef<AudioBufferSourceNode[]>([]);
   const queuedAudioChunksRef = useRef<Float32Array[]>([]);
@@ -241,6 +245,23 @@ export function useVoice({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clearAsrProcessingTimer]);
 
+  /** Browsers start AudioContext suspended until a user gesture — must resume before TTS plays. */
+  const ensurePlaybackAudioContext = useCallback(async () => {
+    if (!audioContextRef.current) {
+      audioContextRef.current = new AudioContext({ sampleRate: PLAYBACK_SAMPLE_RATE });
+    }
+    const ctx = audioContextRef.current;
+    if (ctx.state === "suspended") {
+      await ctx.resume();
+      log.info("Playback AudioContext resumed");
+    }
+    return ctx;
+  }, []);
+
+  const primePlaybackFromUserGesture = useCallback(() => {
+    void ensurePlaybackAudioContext();
+  }, [ensurePlaybackAudioContext]);
+
   const clearPlaybackFlushTimer = useCallback(() => {
     if (playbackFlushTimerRef.current) {
       clearTimeout(playbackFlushTimerRef.current);
@@ -292,6 +313,10 @@ export function useVoice({
   const flushQueuedAudio = useCallback((force = false) => {
     const ctx = audioContextRef.current;
     if (!ctx) return;
+    if (ctx.state === "suspended") {
+      void ctx.resume().then(() => flushQueuedAudio(force));
+      return;
+    }
     if (queuedAudioSamplesRef.current === 0) return;
 
     const now = ctx.currentTime;
@@ -413,10 +438,7 @@ export function useVoice({
       // Request microphone permission
       await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      // Create AudioContext for playback
-      if (!audioContextRef.current) {
-        audioContextRef.current = new AudioContext({ sampleRate: 24000 });
-      }
+      await ensurePlaybackAudioContext();
 
       // Reset tracked messages
       trackedMessagesRef.current = [];
@@ -841,20 +863,45 @@ export function useVoice({
       mediaStreamRef.current = stream;
 
       const ctx = new AudioContext({ sampleRate: 16000 });
+      if (ctx.state === "suspended") {
+        await ctx.resume();
+      }
+
+      const workletCode = `
+        class MicProcessor extends AudioWorkletProcessor {
+          constructor() { super(); this._buf = new Float32Array(4096); this._pos = 0; }
+          process(inputs) {
+            const ch = inputs[0]?.[0];
+            if (!ch) return true;
+            for (let i = 0; i < ch.length; i++) {
+              this._buf[this._pos++] = ch[i];
+              if (this._pos >= 4096) { this.port.postMessage(this._buf); this._buf = new Float32Array(4096); this._pos = 0; }
+            }
+            return true;
+          }
+        }
+        registerProcessor('mic-processor', MicProcessor);
+      `;
+      const blob = new Blob([workletCode], { type: "application/javascript" });
+      const workletUrl = URL.createObjectURL(blob);
+      await ctx.audioWorklet.addModule(workletUrl);
+      URL.revokeObjectURL(workletUrl);
+
       const source = ctx.createMediaStreamSource(stream);
-      const processor = ctx.createScriptProcessor(4096, 1, 1);
+      const worklet = new AudioWorkletNode(ctx, "mic-processor");
+      const silentGain = ctx.createGain();
+      silentGain.gain.value = 0;
+      source.connect(worklet);
+      worklet.connect(silentGain);
+      silentGain.connect(ctx.destination);
 
-      source.connect(processor);
-      processor.connect(ctx.destination);
-
-      processor.onaudioprocess = (event) => {
+      worklet.port.onmessage = (event) => {
         if (!isListeningRef.current) return;
         const connector = relayConnectorRef.current;
         if (!connector?.isReady) return;
 
-        const inputData = event.inputBuffer.getChannelData(0);
+        const inputData = event.data as Float32Array;
 
-        // Compute RMS audio level (float32 range 0..1)
         let sumSq = 0;
         for (let i = 0; i < inputData.length; i++) sumSq += inputData[i] * inputData[i];
         const rms = Math.sqrt(sumSq / inputData.length);
@@ -875,19 +922,16 @@ export function useVoice({
             return;
           }
 
-          // Sustained near-field speech should still be able to interrupt TTS.
           micHoldUntilRef.current = 0;
         } else {
           bargeInFramesRef.current = 0;
         }
 
-        // Convert float32 to int16 PCM
         const pcm = new Int16Array(inputData.length);
         for (let i = 0; i < inputData.length; i++) {
           pcm[i] = Math.max(-32768, Math.min(32767, inputData[i] * 32768));
         }
 
-        // Send as hex-encoded string
         const bytes = new Uint8Array(pcm.buffer);
         let hex = "";
         for (let i = 0; i < bytes.length; i++) {
@@ -897,7 +941,7 @@ export function useVoice({
         connector.sendJson({ type: "audio", data: hex });
       };
 
-      processorRef.current = { processor, source, ctx };
+      micCaptureRef.current = { worklet, source, ctx, silentGain };
       isListeningRef.current = true;
       setState((s) => ({ ...s, isListening: true, userTranscript: "" }));
     } catch (error) {
@@ -911,12 +955,13 @@ export function useVoice({
   const stopListening = useCallback(() => {
     isListeningRef.current = false;
 
-    if (processorRef.current) {
-      const { processor, source, ctx } = processorRef.current;
-      processor.disconnect();
+    if (micCaptureRef.current) {
+      const { worklet, source, ctx, silentGain } = micCaptureRef.current;
+      worklet.disconnect();
       source.disconnect();
+      silentGain.disconnect();
       ctx.close();
-      processorRef.current = null;
+      micCaptureRef.current = null;
     }
 
     if (mediaStreamRef.current) {
@@ -1027,6 +1072,7 @@ export function useVoice({
     sendCodeUpdate,
     sendWhiteboardUpdate,
     interruptPlayback,
+    primePlaybackFromUserGesture,
     mediaStreamRef,
   };
 }

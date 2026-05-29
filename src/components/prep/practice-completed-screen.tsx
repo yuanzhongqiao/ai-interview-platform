@@ -1,6 +1,6 @@
 "use client";
 
-import { AuralLogo } from "@/components/ui/aural-logo";
+import { BrandMark } from "@/components/ui/brand-mark";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { CheckCircle2 } from "lucide-react";
@@ -16,10 +16,7 @@ export function PracticeCompletedScreen({
   return (
     <div className="flex min-h-screen flex-col bg-muted/30">
       <header className="sticky top-0 z-50 flex h-14 items-center border-b bg-card px-6">
-        <div className="flex items-center gap-1">
-          <AuralLogo size={28} className="shrink-0" />
-          <span className="font-heading text-base font-bold tracking-[2px]">AURAL</span>
-        </div>
+        <BrandMark size={28} />
       </header>
       <div className="flex flex-1 items-center justify-center p-4">
         <Card className="w-full max-w-md">

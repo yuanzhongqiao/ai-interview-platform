@@ -1,12 +1,18 @@
-import { DocImage } from "@/components/docs/doc-image";
+﻿import { DocImage } from "@/components/docs/doc-image";
 import type { DocArticle } from "./types";
+import { accountAndSecurityContentJa } from "./ja/account-security";
+import { accountAndSecurityContentZh } from "./zh/account-security";
 
 export const accountSecurityArticles: DocArticle[] = [
   {
     slug: "account-and-security",
     categorySlug: "account-security",
     title: "Account and Security",
+    titleZh: "账户与安全",
     description: "Profile settings, password management, and data privacy",
+    descriptionZh: "个人资料、密码管理与数据隐私",
+    titleJa: "アカウントとセキュリティ",
+    descriptionJa: "プロフィール、パスワード、データプライバシーの管理",
     audience: "both",
     order: 1,
     content: () => (
@@ -42,5 +48,7 @@ export const accountSecurityArticles: DocArticle[] = [
         </p>
       </>
     ),
+    contentZh: accountAndSecurityContentZh,
+    contentJa: accountAndSecurityContentJa,
   },
 ];

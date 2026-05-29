@@ -45,7 +45,14 @@ import {
     buildBigModelFullRequest,
     buildBigModelHeaders,
     parseAsrResponse,
+    formatAsrHandshakeHint,
+    resolveAsrApiKey,
+    resolveAsrAuthMode,
+    resolveAsrResourceId,
     resolveBigModelAsrLanguage,
+    finalizeBigModelAsrConfig,
+    isAsrBusinessCodeOk,
+    ASR_MSG_SERVER_ACK,
     type BigModelAsrConfig,
 } from "./volcengine-asr";
 import {
@@ -75,8 +82,15 @@ const RELAY_PORT = Number(process.env.VOICE_RELAY_PORT) || 8766;
 // ASR config — X-Api-Key auth (new console) for ASR 2.0
 const ASR_APP_ID = process.env.DOUBAO_APP_ID || process.env.DOUBAO_APP_KEY || "";
 const ASR_ACCESS_TOKEN = process.env.DOUBAO_ACCESS_TOKEN || "";
-const ASR_API_KEY = process.env.DOUBAO_API_KEY || "";
-const ASR_RESOURCE_ID = process.env.DOUBAO_ASR_RESOURCE_ID || "volc.seedasr.sauc.duration";
+const asrApiKeyResolved = resolveAsrApiKey({
+  asrApiKey: process.env.DOUBAO_ASR_API_KEY,
+  apiKey: process.env.DOUBAO_API_KEY,
+});
+const ASR_API_KEY = asrApiKeyResolved.key;
+const ASR_RESOURCE_ID = resolveAsrResourceId(
+  process.env.DOUBAO_ASR_RESOURCE_ID,
+  (message) => log.warn(message),
+);
 
 /** Volc BigModel endpointing / speech timing bounds (ms). Docs: min 200ms for end window. */
 const ASR_ENDPOINT_MIN_MS = 200;
@@ -193,6 +207,55 @@ function getTtsAuth(): TtsAuthConfig {
     apiKey: TTS_API_KEY,
     resourceId: TTS_RESOURCE_ID,
   });
+}
+
+/**
+ * 流式 ASR 鉴权 — https://www.volcengine.com/docs/6561/1354869
+ * 新版控制台 ASR 2.0：仅 X-Api-Key（DOUBAO_ASR_API_KEY = API Key 管理）
+ * 旧版控制台：X-Api-App-Key + X-Api-Access-Key
+ * DOUBAO_ASR_AUTH: auto | api_key | app_token
+ */
+function getAsrAuth(): TtsAuthConfig {
+  const resourceId = ASR_RESOURCE_ID.trim() || "volc.seedasr.sauc.duration";
+  const mode = resolveAsrAuthMode({
+    authMode: process.env.DOUBAO_ASR_AUTH,
+    resourceId,
+    apiKey: ASR_API_KEY,
+    appId: ASR_APP_ID,
+    accessToken: ASR_ACCESS_TOKEN,
+  });
+  const apiKey = ASR_API_KEY.trim();
+
+  if (mode === "api_key" && apiKey) {
+    return {
+      appId: "",
+      accessToken: "",
+      resourceId,
+      apiKey,
+    };
+  }
+
+  return resolveTtsAuthConfig({
+    appId: ASR_APP_ID,
+    accessToken: ASR_ACCESS_TOKEN,
+    apiKey: "",
+    resourceId,
+  });
+}
+
+function getAsrAuthModeLabel(): "api_key" | "app_token" {
+  return getAsrAuth().apiKey ? "api_key" : "app_token";
+}
+
+function buildAsrWsHeaders(reqid: string): Record<string, string> {
+  const auth = getAsrAuth();
+  return buildBigModelHeaders(
+    auth.appId,
+    auth.accessToken,
+    reqid,
+    auth.resourceId,
+    auth.apiKey,
+  );
 }
 
 function getTtsOptions(language?: string): TtsSynthesisOptions {
@@ -720,7 +783,19 @@ async function summarizeQuestion(
 // ── Relay server ────────────────────────────────────────────────────
 
 const wss = new WebSocketServer({ port: RELAY_PORT });
-log.info(`ASR: resource=${ASR_RESOURCE_ID}, auth=${ASR_API_KEY ? `X-Api-Key(${ASR_API_KEY.slice(0, 8)}...)` : "AppKey+AccessKey"}`);
+const asrAuthResolved = getAsrAuth();
+if (
+  asrAuthResolved.apiKey &&
+  asrApiKeyResolved.source === "DOUBAO_API_KEY" &&
+  !process.env.DOUBAO_ASR_API_KEY?.trim()
+) {
+  log.warn(
+    "ASR X-Api-Key is from DOUBAO_API_KEY; for 新版控制台 set DOUBAO_ASR_API_KEY from API Key 管理 (Secret Key often returns 401)",
+  );
+}
+log.info(
+  `ASR: resource=${asrAuthResolved.resourceId}, auth=${asrAuthResolved.apiKey ? `X-Api-Key(${asrAuthResolved.apiKey.slice(0, 8)}... from ${asrApiKeyResolved.source || "?"})` : "AppId+AccessKey"}`,
+);
 log.info(`ASR VAD: end_window_size=${ASR_END_WINDOW_MS}ms, force_to_speech=${ASR_FORCE_SPEECH_MS}ms`);
 log.info(`ASR final coalescing: normal=${ASR_FINAL_COALESCE_MS}ms, long=${ASR_LONG_FINAL_COALESCE_MS}ms, quiet=${ASR_PENDING_FINAL_QUIET_MS}ms, active_speech_hold=${ASR_ACTIVE_SPEECH_HOLD_MS}ms, max_active_hold=${ASR_MAX_ACTIVE_SPEECH_HOLD_MS}ms, session_max_speech=${ASR_SESSION_MAX_CONTINUOUS_SPEECH_MS}ms, stuck_rotate=${ASR_STUCK_TEXT_ROTATE_MS}ms`);
 const ttsAuthResolved = getTtsAuth();
@@ -731,10 +806,14 @@ if (VISION_LLM_API_KEY) {
   );
 }
 logRelayLlmStartup();
+log.info(
+  `Startup: NODE_ENV=${process.env.NODE_ENV || "(unset)"}, LOG_LEVEL=${process.env.LOG_LEVEL || "(default)"}, port=${RELAY_PORT}`,
+);
 log.info(`Listening on ws://localhost:${RELAY_PORT}`);
 
 wss.on("connection", (browserWs) => {
-  log.info("Browser connected, waiting for init...");
+  const connId = randomUUID().slice(0, 8);
+  log.info(`[conn=${connId}] Browser connected, waiting for init...`);
 
   const timeout = setTimeout(() => {
     log.error("No init message received within 10s");
@@ -747,11 +826,18 @@ wss.on("connection", (browserWs) => {
       if (msg.type === "mic_test") {
         clearTimeout(timeout);
         browserWs.removeListener("message", handler);
+        log.info(`[conn=${connId}] Mic test mode requested`);
         handleMicTestConnection(browserWs);
       } else if (msg.type === "init" && msg.context) {
         clearTimeout(timeout);
         browserWs.removeListener("message", handler);
-        handleBrowserConnection(browserWs, msg.context as InterviewContext);
+        const initCtx = msg.context as InterviewContext;
+        log.info(
+          `[conn=${connId}] Init received: title="${(initCtx.title || "").slice(0, 48)}", lang=${initCtx.language}, questions=${initCtx.questions?.length ?? 0}`,
+        );
+        handleBrowserConnection(browserWs, initCtx);
+      } else if (msg.type) {
+        log.warn(`[conn=${connId}] Ignored pre-init message type=${msg.type}`);
       }
     } catch {
       // Not JSON, ignore
@@ -891,10 +977,7 @@ async function handleMicTestConnection(browserWs: WebSocket) {
       forceToSpeechTime: ASR_FORCE_SPEECH_MS,
     };
 
-    const wsHeaders = buildBigModelHeaders(
-      ASR_APP_ID, ASR_ACCESS_TOKEN, reqid, ASR_RESOURCE_ID,
-      ASR_API_KEY || undefined,
-    );
+    const wsHeaders = buildAsrWsHeaders(reqid);
     const nextWs = new WebSocket(BIGMODEL_ASR_URL, { headers: wsHeaders });
 
     await new Promise<void>((resolve, reject) => {
@@ -906,7 +989,11 @@ async function handleMicTestConnection(browserWs: WebSocket) {
         res.on("data", (chunk: Buffer) => { body += chunk.toString(); });
         res.on("end", () => {
           clearTimeout(t);
-          log.error(`Mic test ASR rejected: HTTP ${res.statusCode} — ${body}`);
+          const hint = formatAsrHandshakeHint(res.statusCode || 0, body, {
+            resourceId: ASR_RESOURCE_ID,
+            authMode: getAsrAuthModeLabel(),
+          });
+          log.error(`Mic test ASR rejected:\n${hint}`);
           reject(new Error(`ASR server responded ${res.statusCode}: ${body}`));
         });
       });
@@ -923,13 +1010,30 @@ async function handleMicTestConnection(browserWs: WebSocket) {
     }
   }
 
+  let micTestAudioRx = 0;
+  let micTestAudioDropWarnAt = 0;
   browserWs.on("message", (data) => {
-    if (!asrWs || asrWs.readyState !== WebSocket.OPEN || !asrAlive) return;
     try {
       const msg = JSON.parse(data.toString());
       if (msg.type === "audio" && msg.data) {
+        micTestAudioRx++;
+        if (!asrWs || asrWs.readyState !== WebSocket.OPEN || !asrAlive) {
+          const now = Date.now();
+          if (now - micTestAudioDropWarnAt >= 5_000) {
+            micTestAudioDropWarnAt = now;
+            log.warn(
+              `Mic test audio dropped (rx=${micTestAudioRx}): asrAlive=${asrAlive}, wsState=${asrWs?.readyState ?? "none"}`,
+            );
+          }
+          return;
+        }
         asrAudioSeq++;
         asrWs.send(buildBigModelAudioRequest(Buffer.from(msg.data, "hex"), asrAudioSeq));
+        if (micTestAudioRx === 1) {
+          log.info("Mic test: first audio chunk forwarded to ASR");
+        }
+      } else if (msg.type) {
+        log.info(`Mic test ← browser ${msg.type}`);
       }
     } catch { /* ignore */ }
   });
@@ -965,6 +1069,53 @@ async function handleMicTestConnection(browserWs: WebSocket) {
 // ── Interview handler ───────────────────────────────────────────────
 
 async function handleBrowserConnection(browserWs: WebSocket, ctx: InterviewContext) {
+  const sessionId = randomUUID().slice(0, 8);
+  let browserAudioRxChunks = 0;
+  let browserAudioForwardedChunks = 0;
+  let browserAudioDroppedChunks = 0;
+  let lastBrowserAudioLogAt = 0;
+  let lastAudioDropWarnAt = 0;
+  let ttsBinaryChunksSent = 0;
+
+  const logSession = (
+    level: "info" | "warn" | "debug" | "error",
+    message: string,
+    ...args: unknown[]
+  ) => {
+    log[level](`[sess=${sessionId}] ${message}`, ...args);
+  };
+
+  function describeAsrGate(): string {
+    if (!asrWs) return "no_asr_ws";
+    if (asrWs.readyState !== WebSocket.OPEN) return `asr_ws_state=${asrWs.readyState}`;
+    if (!asrAlive) return "asr_not_alive";
+    if (isTransitioning) return "is_transitioning";
+    return "ok";
+  }
+
+  function maybeLogBrowserAudioStats(force = false) {
+    const now = Date.now();
+    if (!force && now - lastBrowserAudioLogAt < 10_000) return;
+    lastBrowserAudioLogAt = now;
+    logSession(
+      "info",
+      `audio stats: rx=${browserAudioRxChunks} fwd=${browserAudioForwardedChunks} drop=${browserAudioDroppedChunks} asrSeq=${asrAudioSeq} gate=${describeAsrGate()} suppress=${suppressAsrResults} tts=${ttsSpeaking} generating=${generatingResponse}`,
+    );
+  }
+
+  function sendJsonToBrowser(payload: Record<string, unknown>) {
+    const type = String(payload.type ?? "unknown");
+    if (browserWs.readyState !== WebSocket.OPEN) {
+      logSession("warn", `skip →browser ${type}: socket state=${browserWs.readyState}`);
+      return false;
+    }
+    browserWs.send(JSON.stringify(payload));
+    if (type !== "pong") {
+      logSession("debug", `→ browser ${type}`);
+    }
+    return true;
+  }
+
   // ── ASR state ──────────────────────────────────────────────────
   let asrWs: WebSocket | null = null;
   let asrAlive = false;
@@ -1135,8 +1286,9 @@ async function handleBrowserConnection(browserWs: WebSocket, ctx: InterviewConte
     default:        maxFollowUps = 2;
   }
 
-  log.info(
-    `Interview: "${ctx.title}" (${sortedQuestions.length} questions, lang=${ctx.language}, startQ=${currentQuestionIndex})`
+  logSession(
+    "info",
+    `Interview: "${ctx.title}" (${sortedQuestions.length} questions, lang=${ctx.language}, startQ=${currentQuestionIndex + 1}, asrResource=${ASR_RESOURCE_ID}, asrAuth=${getAsrAuthModeLabel()})`,
   );
 
   const NEXT_TOKEN = "[NEXT]";
@@ -1450,9 +1602,15 @@ async function handleBrowserConnection(browserWs: WebSocket, ctx: InterviewConte
     const abortController = new AbortController();
     ttsAbortController = abortController;
     ttsSpeaking = true;
+    ttsBinaryChunksSent = 0;
 
     const ttsOpts = getTtsOptions(ctx.language);
     const auth = getTtsAuth();
+
+    logSession(
+      "info",
+      `TTS start: ${text.length} chars, speaker=${ttsOpts.speaker}, resource=${auth.resourceId}`,
+    );
 
     // Interrupt any residual browser-side playback and notify TTS starting
     if (browserWs.readyState === WebSocket.OPEN) {
@@ -1477,12 +1635,16 @@ async function handleBrowserConnection(browserWs: WebSocket, ctx: InterviewConte
           sendTranscriptTextOnce();
           browserWs.send(event.audio, { binary: true });
           totalAudioBytes += event.audio.length;
+          ttsBinaryChunksSent++;
+          if (ttsBinaryChunksSent === 1) {
+            logSession("info", `TTS first binary chunk: ${event.audio.length} bytes`);
+          }
         } else if (event.type === "sentence_start") {
           // The full response text is sent once the first audio chunk is ready.
         } else if (event.type === "sentence_end") {
           browserWs.send(JSON.stringify({ type: "tts_sentence_end", data: { text: event.text } }));
         } else if (event.type === "error") {
-          log.error(`TTS error: ${event.error}`);
+          logSession("error", `TTS stream error event: ${event.error}`);
           break;
         } else if (event.type === "done") {
           completed = true;
@@ -1490,8 +1652,16 @@ async function handleBrowserConnection(browserWs: WebSocket, ctx: InterviewConte
       }
     } catch (err) {
       if (!abortController.signal.aborted) {
-        log.error("TTS streaming error:", err);
+        logSession("error", "TTS streaming exception:", err);
       }
+    }
+
+    logSession(
+      "info",
+      `TTS end: bytes=${totalAudioBytes}, chunks=${ttsBinaryChunksSent}, completed=${completed}, aborted=${abortController.signal.aborted}`,
+    );
+    if (completed && totalAudioBytes === 0) {
+      logSession("warn", "TTS completed but sent 0 audio bytes — browser will stay silent");
     }
 
     // Wait for client-side playback to finish before declaring TTS done.
@@ -2429,6 +2599,7 @@ async function handleBrowserConnection(browserWs: WebSocket, ctx: InterviewConte
 
   /** Reconnect ASR after response cycle so accumulated echo text is cleared. */
   async function reopenAsr() {
+    logSession("info", "reopenAsr: reconnecting after TTS to clear echo");
     try {
       await connectAsr();
       if (!keepAliveInterval) {
@@ -2524,7 +2695,7 @@ async function handleBrowserConnection(browserWs: WebSocket, ctx: InterviewConte
     const reqid = randomUUID().replace(/-/g, "");
     asrAudioSeq = 1;
 
-    const asrConfig: BigModelAsrConfig = {
+    const asrConfig = finalizeBigModelAsrConfig(ASR_RESOURCE_ID, {
       language: resolveBigModelAsrLanguage(ctx.language),
       format: "pcm",
       rate: 16000,
@@ -2534,23 +2705,21 @@ async function handleBrowserConnection(browserWs: WebSocket, ctx: InterviewConte
       showUtterance: true,
       resultType: "full",
       enablePunc: true,
-      enableDdc: true,
       endWindowSize: ASR_END_WINDOW_MS,
       forceToSpeechTime: ASR_FORCE_SPEECH_MS,
-      enableNonstream: true,
-      ssdVersion: "200",
       corpus: buildAsrContext(),
-    };
+    });
+    logSession(
+      "info",
+      `ASR init config: asr20=${asrConfig.enableNonstream === true}, endWindow=${ASR_END_WINDOW_MS}ms`,
+    );
 
     if (asrWs) {
       asrWs.removeAllListeners();
       try { asrWs.close(); } catch { /* ignore */ }
     }
 
-    const wsHeaders = buildBigModelHeaders(
-      ASR_APP_ID, ASR_ACCESS_TOKEN, reqid, ASR_RESOURCE_ID,
-      ASR_API_KEY || undefined,
-    );
+    const wsHeaders = buildAsrWsHeaders(reqid);
     asrWs = new WebSocket(BIGMODEL_ASR_URL, { headers: wsHeaders });
 
     await new Promise<void>((resolve, reject) => {
@@ -2562,22 +2731,51 @@ async function handleBrowserConnection(browserWs: WebSocket, ctx: InterviewConte
         res.on("data", (chunk: Buffer) => { body += chunk.toString(); });
         res.on("end", () => {
           clearTimeout(t);
-          log.error(`ASR WebSocket rejected: HTTP ${res.statusCode} — ${body}`);
+          const hint = formatAsrHandshakeHint(res.statusCode || 0, body, {
+            resourceId: ASR_RESOURCE_ID,
+            authMode: getAsrAuthModeLabel(),
+          });
+          log.error(`ASR WebSocket rejected:\n${hint}`);
           reject(new Error(`ASR server responded ${res.statusCode}: ${body}`));
         });
       });
     });
-    log.info(`ASR connected: resource=${ASR_RESOURCE_ID}`);
+    logSession("info", `ASR connected: resource=${ASR_RESOURCE_ID}, auth=${getAsrAuthModeLabel()}, reqid=${reqid.slice(0, 8)}`);
 
     asrWs.send(buildBigModelFullRequest(asrConfig, reqid));
     asrAlive = true;
 
+    let asrInboundMsgCount = 0;
+
     asrWs.on("message", (data: Buffer) => {
       try {
         const resp = parseAsrResponse(Buffer.from(data));
+        asrInboundMsgCount++;
+
+        if (asrInboundMsgCount <= 5 || asrInboundMsgCount % 40 === 0) {
+          logSession(
+            "info",
+            `ASR inbound #${asrInboundMsgCount}: msgType=${resp.messageType} code=${resp.code ?? "-"} payloadBytes=${data.length}`,
+          );
+        }
+
+        if (resp.messageType === ASR_MSG_SERVER_ACK) {
+          if (!isAsrBusinessCodeOk(resp.code)) {
+            logSession("error", `ASR ACK error: code=${resp.code} ${resp.message ?? ""}`);
+          }
+          return;
+        }
 
         if (resp.errorCode != null) {
-          log.error(`ASR error: ${resp.errorCode} ${resp.errorMessage}`);
+          logSession("error", `ASR protocol error: ${resp.errorCode} ${resp.errorMessage}`);
+          return;
+        }
+
+        if (resp.code != null && !isAsrBusinessCodeOk(resp.code)) {
+          logSession(
+            "error",
+            `ASR business error: code=${resp.code} ${resp.message || resp.errorMessage || ""}`,
+          );
           return;
         }
 
@@ -2594,10 +2792,16 @@ async function handleBrowserConnection(browserWs: WebSocket, ctx: InterviewConte
         }
 
         if (results.length === 0 && resp.messageType !== 1 && resp.messageType !== 9) {
-          log.info(`ASR non-text msg: type=${resp.messageType}, code=${resp.code}, seq=${resp.sequence}`);
+          logSession("debug", `ASR non-text: msgType=${resp.messageType}, code=${resp.code}, seq=${resp.sequence}`);
         }
 
         for (const r of results) {
+          if (r.text.trim()) {
+            logSession(
+              r.definite ? "info" : "debug",
+              `ASR ← Volc: definite=${r.definite} text="${r.text.slice(0, 80)}${r.text.length > 80 ? "..." : ""}"`,
+            );
+          }
           // Server-side barge-in: interim speech during TTS → cancel TTS immediately
           if (shouldHoldBargeInInterimForFinal({
             text: r.text,
@@ -2749,7 +2953,7 @@ async function handleBrowserConnection(browserWs: WebSocket, ctx: InterviewConte
 
     asrWs.on("close", (code: number, reason: Buffer) => {
       const reasonStr = reason?.toString() || "";
-      log.warn(`ASR WS closed (code=${code}, reason="${reasonStr}")`);
+      logSession("warn", `ASR WS closed (code=${code}, reason="${reasonStr}")`);
       asrAlive = false;
 
       // Don't auto-reconnect if we intentionally closed (will reopen later)
@@ -2770,14 +2974,14 @@ async function handleBrowserConnection(browserWs: WebSocket, ctx: InterviewConte
       log.error(`ASR WS error: ${err.message}`);
     });
 
-    log.info("ASR 2.0 connected");
   }
 
   const MAX_RECONNECT_ATTEMPTS = 3;
   const RECONNECT_DELAY_MS = 1000;
 
   async function autoReconnectAsr(): Promise<void> {
-    browserWs.send(JSON.stringify({ type: "session_reconnecting" }));
+        logSession("info", "→ browser session_reconnecting");
+        browserWs.send(JSON.stringify({ type: "session_reconnecting" }));
 
     for (let attempt = 1; attempt <= MAX_RECONNECT_ATTEMPTS; attempt++) {
       if (interviewDone || browserWs.readyState !== WebSocket.OPEN) return;
@@ -2800,7 +3004,7 @@ async function handleBrowserConnection(browserWs: WebSocket, ctx: InterviewConte
         }
 
         browserWs.send(JSON.stringify({ type: "session_reconnected" }));
-        log.info(`ASR auto-reconnect succeeded on attempt ${attempt}`);
+        logSession("info", `ASR auto-reconnect succeeded on attempt ${attempt}`);
         return;
       } catch (err) {
         log.warn(`ASR auto-reconnect attempt ${attempt} failed:`, err instanceof Error ? err.message : err);
@@ -2821,18 +3025,19 @@ async function handleBrowserConnection(browserWs: WebSocket, ctx: InterviewConte
   try {
     await connectAsr();
 
-    browserWs.send(JSON.stringify({ type: "ready", sessionId: randomUUID() }));
+    const relaySessionUuid = randomUUID();
+    sendJsonToBrowser({ type: "ready", sessionId: relaySessionUuid });
+    logSession("info", `→ browser ready (sessionId=${relaySessionUuid})`);
 
-    browserWs.send(
-      JSON.stringify({
-        type: "question_change",
-        questionIndex: currentQuestionIndex,
-        totalQuestions: sortedQuestions.length,
-      })
-    );
+    sendJsonToBrowser({
+      type: "question_change",
+      questionIndex: currentQuestionIndex,
+      totalQuestions: sortedQuestions.length,
+    });
+    logSession("info", `→ browser question_change Q${currentQuestionIndex + 1}/${sortedQuestions.length}`);
 
     suppressAsrResults = true;
-    log.info(`Starting greeting TTS for Q${currentQuestionIndex + 1}`);
+    logSession("info", `Starting greeting TTS for Q${currentQuestionIndex + 1} (suppressAsrResults=true)`);
     speakAndHandle(greeting, { trackInTranscript: false })
       .then(() => {
         if (!interviewDone && browserWs.readyState === WebSocket.OPEN) {
@@ -2842,13 +3047,11 @@ async function handleBrowserConnection(browserWs: WebSocket, ctx: InterviewConte
       })
       .catch(log.error);
   } catch (err) {
-    log.error("Failed to initialize:", err);
-    browserWs.send(
-      JSON.stringify({
-        type: "error",
-        message: `Connection failed: ${err instanceof Error ? err.message : err}`,
-      })
-    );
+    logSession("error", "Failed to initialize:", err);
+    sendJsonToBrowser({
+      type: "error",
+      message: `Connection failed: ${err instanceof Error ? err.message : err}`,
+    });
     browserWs.close();
     return;
   }
@@ -2860,11 +3063,30 @@ async function handleBrowserConnection(browserWs: WebSocket, ctx: InterviewConte
       const msg = JSON.parse(data.toString());
 
       if (msg.type === "audio" && msg.data) {
+        browserAudioRxChunks++;
         const pcm = Buffer.from(msg.data, "hex");
         noteIncomingAudioActivity(pcm);
-        if (!asrAlive || isTransitioning || !asrWs || asrWs.readyState !== WebSocket.OPEN) return;
+        const gate = describeAsrGate();
+        if (gate !== "ok") {
+          browserAudioDroppedChunks++;
+          const now = Date.now();
+          if (now - lastAudioDropWarnAt >= 5_000) {
+            lastAudioDropWarnAt = now;
+            logSession(
+              "warn",
+              `audio dropped (${browserAudioDroppedChunks}/${browserAudioRxChunks}): gate=${gate}, pcmBytes=${pcm.length}`,
+            );
+          }
+          maybeLogBrowserAudioStats();
+          return;
+        }
+        browserAudioForwardedChunks++;
         asrAudioSeq++;
-        asrWs.send(buildBigModelAudioRequest(pcm, asrAudioSeq));
+        asrWs!.send(buildBigModelAudioRequest(pcm, asrAudioSeq));
+        if (browserAudioForwardedChunks === 1) {
+          logSession("info", `first audio chunk forwarded to ASR (${pcm.length} bytes)`);
+        }
+        maybeLogBrowserAudioStats();
       } else if (msg.type === "barge_in") {
         if (ttsSpeaking || generatingResponse) {
           log.info("Client barge-in signal received — cancelling TTS");
@@ -2928,14 +3150,20 @@ async function handleBrowserConnection(browserWs: WebSocket, ctx: InterviewConte
         }
       } else if (msg.type === "ping") {
         browserWs.send(JSON.stringify({ type: "pong" }));
+      } else if (msg.type) {
+        logSession("info", `← browser ${msg.type}`);
       }
     } catch (err) {
-      log.error("Error handling browser message:", err);
+      logSession("error", "Error handling browser message:", err);
     }
   });
 
   browserWs.on("close", () => {
-    log.info("Browser disconnected");
+    maybeLogBrowserAudioStats(true);
+    logSession(
+      "info",
+      `Browser disconnected (audio rx=${browserAudioRxChunks}, fwd=${browserAudioForwardedChunks}, drop=${browserAudioDroppedChunks})`,
+    );
     interviewDone = true;
     clearPendingAsrFinal();
     settleAllWhiteboardSnapshotRequests(false);

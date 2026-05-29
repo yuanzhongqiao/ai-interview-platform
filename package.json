@@ -22,7 +22,13 @@
     "test:functional": "node --import tsx --test --test-concurrency=1 tests/functional.test.ts",
     "db:types": "npx supabase gen types typescript --local > src/lib/supabase/types.ts",
     "dev:voice": "npx tsx server/voice-relay.ts",
-    "dev:openai-voice": "npx tsx server/openai-voice-relay.ts"
+    "dev:openai-voice": "npx tsx server/openai-voice-relay.ts",
+    "dev:stack": "node scripts/dev-stack.mjs",
+    "check:doubao-asr": "node scripts/check-doubao-asr.mjs",
+    "check:doubao-asr-stream": "node scripts/check-doubao-asr-stream.mjs",
+    "check:doubao-tts-v1": "node scripts/check-doubao-tts-v1.mjs",
+    "docker:full": "docker compose --env-file .env.local up -d --build",
+    "docker:full:down": "docker compose --env-file .env.local down"
   },
   "dependencies": {
     "@excalidraw/excalidraw": "^0.18.0",

@@ -1,0 +1,21 @@
+# 语音中继 · 国内加速（Alpine + npm 镜像，基础镜像可 --build-arg NODE_IMAGE=...）
+ARG NODE_IMAGE=node:20-alpine
+ARG NPM_REGISTRY=https://registry.npmmirror.com
+ARG APK_MIRROR=mirrors.aliyun.com
+
+FROM ${NODE_IMAGE}
+ARG APK_MIRROR
+ARG NPM_REGISTRY
+WORKDIR /app
+RUN sed -i "s/dl-cdn.alpinelinux.org/${APK_MIRROR}/g" /etc/apk/repositories
+ENV NPM_CONFIG_REGISTRY=${NPM_REGISTRY}
+ENV NPM_CONFIG_LOGLEVEL=info
+COPY package.json package-lock.json ./
+RUN --mount=type=cache,target=/root/.npm,id=lingwu-npm \
+    npm ci --omit=dev
+COPY server ./server
+COPY src/lib ./src/lib
+COPY tsconfig.json ./
+ENV VOICE_RELAY_PORT=8766
+EXPOSE 8766
+CMD ["npx", "tsx", "server/voice-relay.ts"]

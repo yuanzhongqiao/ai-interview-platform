@@ -52,7 +52,7 @@ export async function POST(
     return apiError("INTERNAL_ERROR", updateError.message, 500);
   }
 
-  const base = (process.env.NEXT_PUBLIC_APP_URL ?? "https://aural-ai.com").replace(
+  const base = (process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000").replace(
     /\/$/,
     "",
   );

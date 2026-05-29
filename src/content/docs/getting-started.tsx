@@ -1,23 +1,37 @@
-import { DocCallout } from "@/components/docs/doc-callout";
+﻿import { DocCallout } from "@/components/docs/doc-callout";
 import { DocFeature, DocFeatureGrid } from "@/components/docs/doc-feature-grid";
 import { DocImage } from "@/components/docs/doc-image";
 import { DocLink } from "@/components/docs/doc-link";
 import { DocStep, DocSteps } from "@/components/docs/doc-steps";
 import type { DocArticle } from "./types";
+import {
+  accountAndDashboardContentJa,
+  quickStartFirstAiInterviewContentJa,
+  whatIsLingwuContentJa,
+} from "./ja/getting-started";
+import {
+  accountAndDashboardContentZh,
+  quickStartFirstAiInterviewContentZh,
+  whatIsLingwuContentZh,
+} from "./zh/getting-started";
 
 export const gettingStartedArticles: DocArticle[] = [
   {
-    slug: "what-is-aural",
+    slug: "what-is-Lingwu",
     categorySlug: "getting-started",
-    title: "What is Aural?",
+    title: "What is Lingwu?",
+    titleZh: "什么是聆悟？",
+    titleJa: "Lingwu とは？",
     description: "AI-powered interview platform for hiring, research, and practice",
+    descriptionZh: "面向招聘、研究与练习的 AI 面试平台",
+    descriptionJa: "採用・リサーチ・練習向け AI 面接プラットフォーム",
     audience: "both",
     order: 1,
     content: () => (
       <>
         <h2>Product Overview</h2>
         <p>
-          Aural is an AI-powered interview platform that conducts structured interviews autonomously. You design an interview, share a link, and Aural&apos;s AI handles the conversation — asking questions, probing with follow-ups, and generating detailed analysis when the session is complete.
+          Lingwu is an AI-powered interview platform that conducts structured interviews autonomously. You design an interview, share a link, and Lingwu&apos;s AI handles the conversation — asking questions, probing with follow-ups, and generating detailed analysis when the session is complete.
         </p>
 
         <h3>Key Features</h3>
@@ -59,12 +73,18 @@ export const gettingStartedArticles: DocArticle[] = [
         </ol>
       </>
     ),
+    contentZh: whatIsLingwuContentZh,
+    contentJa: whatIsLingwuContentJa,
   },
   {
     slug: "account-and-dashboard",
     categorySlug: "getting-started",
     title: "Account and Dashboard",
+    titleZh: "账户与工作台",
+    titleJa: "アカウントとダッシュボード",
     description: "Sign up, set up your organization, and navigate the dashboard",
+    descriptionZh: "注册账号、配置组织并熟悉工作台导航",
+    descriptionJa: "登録、組織設定、ダッシュボードのナビゲーション",
     audience: "both",
     order: 2,
     content: () => (
@@ -117,12 +137,18 @@ export const gettingStartedArticles: DocArticle[] = [
         </p>
       </>
     ),
+    contentZh: accountAndDashboardContentZh,
+    contentJa: accountAndDashboardContentJa,
   },
   {
     slug: "quick-start-first-ai-interview",
     categorySlug: "getting-started",
     title: "Quick Start: Your First AI Interview",
+    titleZh: "快速入门：你的第一场 AI 面试",
+    titleJa: "クイックスタート：最初の AI 面接",
     description: "End-to-end walkthrough from goals to sharing the interview link",
+    descriptionZh: "从设定目标到分享面试链接的完整 walkthrough",
+    descriptionJa: "目標設定から面接リンク共有までのウォークスルー",
     audience: "creators",
     order: 3,
     content: () => (
@@ -166,5 +192,7 @@ export const gettingStartedArticles: DocArticle[] = [
         </DocCallout>
       </>
     ),
+    contentZh: quickStartFirstAiInterviewContentZh,
+    contentJa: quickStartFirstAiInterviewContentJa,
   },
 ];

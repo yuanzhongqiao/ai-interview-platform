@@ -2,67 +2,81 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * 聆悟 (Lingwu) design tokens — 花叔 Design inspired (Ink & Signal)
+ * Warm paper surfaces, ink typography, signal-blue primary (no purple AI-slop).
+ */
 @layer base {
   :root {
-    --background: 40 15% 97%;
-    --foreground: 0 0% 20%;
+    --background: 220 22% 97%;
+    --foreground: 222 47% 11%;
 
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 20%;
+    --card-foreground: 222 47% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 20%;
+    --popover-foreground: 222 47% 11%;
 
-    --primary: 14 52% 49%;
+    --primary: 221 72% 40%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 138 31% 87%;
-    --secondary-foreground: 138 25% 23%;
+    --secondary: 220 28% 93%;
+    --secondary-foreground: 222 35% 22%;
 
-    --muted: 45 22% 89%;
-    --muted-foreground: 0 0% 29%;
+    --muted: 220 18% 92%;
+    --muted-foreground: 220 12% 42%;
 
-    --accent: 25 77% 88%;
-    --accent-foreground: 23 57% 18%;
+    --accent: 172 42% 36%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 75% 42%;
+    --destructive: 0 72% 46%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 41 16% 80%;
-    --input: 41 16% 80%;
-    --ring: 14 52% 49%;
+    --border: 220 16% 86%;
+    --input: 220 16% 86%;
+    --ring: 221 72% 40%;
+
+    --sidebar: 220 26% 96%;
+    --sidebar-foreground: 222 47% 11%;
+    --sidebar-accent: 221 55% 94%;
+    --sidebar-border: 220 14% 88%;
 
     --radius: 0.5rem;
   }
 
   .dark {
-    --background: 30 13% 10%;
-    --foreground: 40 24% 90%;
+    --background: 222 28% 7%;
+    --foreground: 220 20% 94%;
 
-    --card: 40 24% 12%;
-    --card-foreground: 40 24% 90%;
+    --card: 222 24% 10%;
+    --card-foreground: 220 20% 94%;
 
-    --popover: 40 24% 12%;
-    --popover-foreground: 40 24% 90%;
+    --popover: 222 24% 10%;
+    --popover-foreground: 220 20% 94%;
 
-    --primary: 14 76% 68%;
-    --primary-foreground: 14 57% 18%;
+    --primary: 217 78% 62%;
+    --primary-foreground: 222 47% 8%;
 
-    --secondary: 36 12% 17%;
-    --secondary-foreground: 40 24% 90%;
+    --secondary: 222 18% 16%;
+    --secondary-foreground: 220 20% 90%;
 
-    --muted: 36 12% 17%;
-    --muted-foreground: 41 10% 62%;
+    --muted: 222 16% 14%;
+    --muted-foreground: 220 12% 58%;
 
-    --accent: 21 49% 23%;
-    --accent-foreground: 25 77% 88%;
+    --accent: 172 38% 42%;
+    --accent-foreground: 222 47% 8%;
 
-    --destructive: 0 91% 71%;
+    --destructive: 0 78% 58%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 37 12% 21%;
-    --input: 37 12% 21%;
-    --ring: 14 76% 68%;
+    --border: 222 14% 18%;
+    --input: 222 14% 18%;
+    --ring: 217 78% 62%;
+
+    --sidebar: 222 26% 8%;
+    --sidebar-foreground: 220 20% 94%;
+    --sidebar-accent: 221 35% 16%;
+    --sidebar-border: 222 14% 16%;
   }
 }
 
@@ -74,13 +88,31 @@
     scroll-behavior: smooth;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
   }
   body:has(.dashboard-shell) {
     overflow: hidden;
   }
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-family: var(--font-heading), system-ui, sans-serif;
+    letter-spacing: -0.02em;
+  }
+}
+
+@layer components {
+  .page-title {
+    @apply font-heading text-3xl font-semibold tracking-tight text-foreground;
+  }
+  .page-subtitle {
+    @apply mt-1 text-sm text-muted-foreground;
+  }
+  .surface-card {
+    @apply rounded-lg border border-border/80 bg-card shadow-sm;
   }
 }
 
@@ -112,7 +144,6 @@
   background: transparent;
 }
 
-/* Slim scrollbar for Monaco editor containers */
 .monaco-scrollbar .slider {
   border-radius: 3px !important;
 }
@@ -120,43 +151,42 @@
 /* ── Force light theme during PDF capture ────────────────────── */
 .pdf-capture,
 .pdf-capture * {
-  --background: 40 15% 97%;
-  --foreground: 0 0% 20%;
+  --background: 220 22% 97%;
+  --foreground: 222 47% 11%;
   --card: 0 0% 100%;
-  --card-foreground: 0 0% 20%;
+  --card-foreground: 222 47% 11%;
   --popover: 0 0% 100%;
-  --popover-foreground: 0 0% 20%;
-  --primary: 19 56% 40%;
+  --popover-foreground: 222 47% 11%;
+  --primary: 221 72% 40%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 138 31% 87%;
-  --secondary-foreground: 138 25% 23%;
-  --muted: 45 22% 89%;
-  --muted-foreground: 0 0% 29%;
-  --accent: 25 77% 88%;
-  --accent-foreground: 23 57% 18%;
-  --destructive: 0 75% 42%;
+  --secondary: 220 28% 93%;
+  --secondary-foreground: 222 35% 22%;
+  --muted: 220 18% 92%;
+  --muted-foreground: 220 12% 42%;
+  --accent: 172 42% 36%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 72% 46%;
   --destructive-foreground: 0 0% 100%;
-  --border: 41 16% 80%;
-  --input: 41 16% 80%;
-  --ring: 19 56% 40%;
+  --border: 220 16% 86%;
+  --input: 220 16% 86%;
+  --ring: 221 72% 40%;
   color-scheme: light;
 }
 
-/* ── Print styles for PDF export ─────────────────────────────── */
 @media print {
   :root {
     color-scheme: light !important;
-    --background: 40 15% 97%;
-    --foreground: 0 0% 20%;
+    --background: 220 22% 97%;
+    --foreground: 222 47% 11%;
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 20%;
-    --primary: 19 56% 40%;
+    --card-foreground: 222 47% 11%;
+    --primary: 221 72% 40%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 138 31% 87%;
-    --secondary-foreground: 138 25% 23%;
-    --muted: 45 22% 89%;
-    --muted-foreground: 0 0% 29%;
-    --border: 41 16% 80%;
+    --secondary: 220 28% 93%;
+    --secondary-foreground: 222 35% 22%;
+    --muted: 220 18% 92%;
+    --muted-foreground: 220 12% 42%;
+    --border: 220 16% 86%;
   }
 
   html,
@@ -192,7 +222,7 @@
   }
 }
 
-/* AI button spinning rainbow border */
+/* AI button — restrained brand gradient (no rainbow AI-slop) */
 .ai-border-spin {
   position: relative;
 }
@@ -206,21 +236,31 @@
   translate: -50% -50%;
   background: conic-gradient(
     from 0deg,
-    #f43f5e, #f59e0b, #10b981, #3b82f6, #8b5cf6, #f43f5e
+    hsl(var(--primary)),
+    hsl(var(--accent)),
+    hsl(var(--primary) / 0.6),
+    hsl(var(--primary))
   );
   border-radius: 50%;
-  animation: ai-spin 2s linear infinite;
+  animation: ai-spin 2.5s linear infinite;
   will-change: transform;
 }
 @keyframes ai-spin {
-  to { rotate: 360deg; }
+  to {
+    rotate: 360deg;
+  }
 }
 
-/* Guided tour */
 .tour-tooltip-enter {
   animation: tour-fade-in 0.25s ease-out;
 }
 @keyframes tour-fade-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

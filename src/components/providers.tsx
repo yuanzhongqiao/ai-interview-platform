@@ -6,6 +6,7 @@ import { httpBatchLink } from "@trpc/client";
 import { trpc } from "@/lib/trpc/client";
 import { AuthProvider } from "@/components/auth-provider";
 import { AppLocaleProvider } from "@/components/app-locale-provider";
+import { LocaleHtmlLang } from "@/components/layout/locale-html-lang";
 import { OrgProvider } from "@/components/org-provider";
 import { ProjectProvider } from "@/components/project-provider";
 import { ThemeProvider } from "next-themes";
@@ -34,6 +35,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <AppLocaleProvider>
+            <LocaleHtmlLang />
             <OrgProvider>
               <ProjectProvider>
                 <ThemeProvider

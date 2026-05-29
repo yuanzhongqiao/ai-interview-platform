@@ -41,7 +41,7 @@ import { useState } from "react";
 export default function NewInterviewPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { locale } = useAppLocale();
+  const { locale, t } = useAppLocale();
   const { currentProject } = useProject();
   const projectId =
     searchParams.get("projectId") ?? currentProject?.id ?? undefined;
@@ -104,25 +104,19 @@ export default function NewInterviewPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">
-          {isZh ? "创建面试" : "Create Interview"}
-        </h1>
-        <p className="text-muted-foreground">
-          {isZh
-            ? "手动创建，或使用 AI 为你生成一场面试。"
-            : "Build manually or let AI generate an interview for you."}
-        </p>
+        <h1 className="text-3xl font-bold">{t("interviews.createTitle")}</h1>
+        <p className="text-muted-foreground">{t("interviews.createSubtitle")}</p>
       </div>
 
       <Tabs defaultValue="ai" className="space-y-6">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="ai" className="gap-2">
             <Sparkles className="h-4 w-4" />
-            {isZh ? "AI 生成器" : "AI Generator"}
+            {t("interviews.tabAi")}
           </TabsTrigger>
           <TabsTrigger value="manual" className="gap-2">
             <PenLine className="h-4 w-4" />
-            {isZh ? "手动创建" : "Manual"}
+            {t("interviews.tabManual")}
           </TabsTrigger>
         </TabsList>
 

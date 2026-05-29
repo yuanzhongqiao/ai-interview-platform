@@ -7,6 +7,8 @@ node_modules/
 .next/
 out/
 build/
+deploy/bundle/*.tar
+deploy/env.production
 
 # Environment
 .env
@@ -26,6 +28,10 @@ yarn-error.log*
 *.swp
 *.swo
 .DS_Store
+Thumbs.db
+
+# Logs
+*.log
 
 # TypeScript
 *.tsbuildinfo
@@ -41,3 +47,6 @@ test-results/
 # Misc
 *.pem
 .vercel
+.claude/
+deploy/nginx/lingwu.conf
+deploy/env.production

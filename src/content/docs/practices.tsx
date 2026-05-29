@@ -1,9 +1,21 @@
-import { DocCallout } from "@/components/docs/doc-callout";
+﻿import { DocCallout } from "@/components/docs/doc-callout";
 import { DocFeature, DocFeatureGrid } from "@/components/docs/doc-feature-grid";
 import { DocImage } from "@/components/docs/doc-image";
 import { DocLink } from "@/components/docs/doc-link";
 import { DocStep, DocSteps } from "@/components/docs/doc-steps";
 import type { DocArticle } from "./types";
+import {
+  practicesOverviewContentJa,
+  reviewingPracticeProgressContentJa,
+  runningAPracticeSessionContentJa,
+  settingUpPracticeContextContentJa,
+} from "./ja/practices";
+import {
+  practicesOverviewContentZh,
+  reviewingPracticeProgressContentZh,
+  runningAPracticeSessionContentZh,
+  settingUpPracticeContextContentZh,
+} from "./zh/practices";
 
 export const practicesArticles: DocArticle[] = [
   {
@@ -12,9 +24,12 @@ export const practicesArticles: DocArticle[] = [
     title: "Practices Overview",
     titleZh: "练习概览",
     description:
-      "Learn how Aural Practices turns an existing interview into a repeatable coaching workspace with voice practice, AI feedback, suggested answers, and score tracking.",
+      "Learn how Lingwu Practices turns an existing interview into a repeatable coaching workspace with voice practice, AI feedback, suggested answers, and score tracking.",
     descriptionZh:
-      "了解 Aural 练习如何把已有面试变成可重复的 AI 教练空间",
+      "了解聆悟练习如何把已有面试变成可重复的 AI 教练空间",
+    titleJa: "練習の概要",
+    descriptionJa:
+      "既存面接を音声練習・AI フィードバック・模範回答・スコア追跡付きのコーチングワークスペースに",
     audience: "creators",
     order: 1,
     content: () => (
@@ -80,7 +95,7 @@ export const practicesArticles: DocArticle[] = [
 
         <h2>What Gets Saved</h2>
         <p>
-          Aural saves practice sessions and answer attempts so you can measure
+          Lingwu saves practice sessions and answer attempts so you can measure
           progress over time. Saved data includes the interview, practice mode,
           status, start and completion timestamps, total duration, submitted
           answers, per-answer feedback, attempt count, average score, and best
@@ -88,6 +103,8 @@ export const practicesArticles: DocArticle[] = [
         </p>
       </>
     ),
+    contentZh: practicesOverviewContentZh,
+    contentJa: practicesOverviewContentJa,
   },
   {
     slug: "setting-up-practice-context",
@@ -95,8 +112,11 @@ export const practicesArticles: DocArticle[] = [
     title: "Setting Up Practice Context",
     titleZh: "设置练习上下文",
     description:
-      "Add role, company, job description, and resume context so Aural can tailor practice feedback and suggested answers to the interview goal.",
+      "Add role, company, job description, and resume context so Lingwu can tailor practice feedback and suggested answers to the interview goal.",
     descriptionZh: "添加职位、公司、JD 和简历信息，让 AI 教练反馈更贴合目标",
+    titleJa: "練習コンテキストの設定",
+    descriptionJa:
+      "役割・会社・JD・履歴書コンテキストでフィードバックと模範回答を最適化",
     audience: "creators",
     order: 2,
     content: () => (
@@ -104,7 +124,7 @@ export const practicesArticles: DocArticle[] = [
         <h2>Why Context Matters</h2>
         <p>
           Practice context gives the AI coach the background it needs to judge
-          whether an answer proves the right signals. Without context, Aural can
+          whether an answer proves the right signals. Without context, Lingwu can
           still score clarity and structure. With context, it can also tell you
           where to use resume evidence, which role expectations are missing, and
           how to make an answer sound more specific to the opportunity.
@@ -161,15 +181,20 @@ export const practicesArticles: DocArticle[] = [
         </DocCallout>
       </>
     ),
+    contentZh: settingUpPracticeContextContentZh,
+    contentJa: settingUpPracticeContextContentJa,
   },
   {
     slug: "running-a-practice-session",
     categorySlug: "practices",
     title: "Running a Practice Session",
     titleZh: "进行练习会话",
+    titleJa: "練習セッションの実施",
     description:
       "Start a focused voice practice session, answer questions, receive AI coaching, retry weak answers, and use suggested answers responsibly.",
     descriptionZh: "开始语音练习、作答、获取反馈、重试薄弱回答并使用建议答案",
+    descriptionJa:
+      "音声練習の開始、回答、AI コーチング、再試行、模範回答の適切な利用",
     audience: "creators",
     order: 3,
     content: () => (
@@ -177,7 +202,7 @@ export const practicesArticles: DocArticle[] = [
         <h2>Start Practice</h2>
         <p>
           Open an interview&apos;s <strong>Practices</strong> tab and click{" "}
-          <strong>Practice interview</strong>. Aural opens focused practice mode
+          <strong>Practice interview</strong>. Lingwu opens focused practice mode
           at <code>/practice/[interviewId]</code> and starts a new practice
           session for the signed-in user.
         </p>
@@ -202,7 +227,7 @@ export const practicesArticles: DocArticle[] = [
           </DocStep>
           <DocStep step={3} title="Submit for feedback">
             <p>
-              Aural grades the answer, streams coaching feedback, saves the
+              Lingwu grades the answer, streams coaching feedback, saves the
               attempt, and updates your best score for the current question.
             </p>
           </DocStep>
@@ -252,15 +277,20 @@ export const practicesArticles: DocArticle[] = [
         </DocCallout>
       </>
     ),
+    contentZh: runningAPracticeSessionContentZh,
+    contentJa: runningAPracticeSessionContentJa,
   },
   {
     slug: "reviewing-practice-progress",
     categorySlug: "practices",
     title: "Reviewing Practice Progress",
     titleZh: "查看练习进展",
+    titleJa: "練習進捗の確認",
     description:
       "Use the Practices dashboard to review scores, attempts, durations, statuses, filters, exports, repeated runs, and cleanup actions.",
     descriptionZh: "使用练习仪表板查看分数、次数、时长、状态、筛选、导出和清理操作",
+    descriptionJa:
+      "練習ダッシュボードでスコア、試行、時間、ステータス、フィルター、エクスポートを管理",
     audience: "creators",
     order: 4,
     content: () => (
@@ -335,5 +365,7 @@ export const practicesArticles: DocArticle[] = [
         </DocCallout>
       </>
     ),
+    contentZh: reviewingPracticeProgressContentZh,
+    contentJa: reviewingPracticeProgressContentJa,
   },
 ];

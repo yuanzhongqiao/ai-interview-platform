@@ -6,6 +6,7 @@ import { AntiCheatingGuard } from "@/components/session/anti-cheating-banner";
 import { IntervieweeOnboarding } from "@/components/session/interviewee-onboarding";
 import { PreparingScreen } from "@/components/session/preparing-screen";
 import { Card, CardContent } from "@/components/ui/card";
+import { getIntervieweeUi } from "@/lib/i18n/interviewee-ui";
 import { trpc } from "@/lib/trpc/client";
 import { CheckCircle2 } from "lucide-react";
 import dynamic from "next/dynamic";
@@ -64,21 +65,19 @@ export default function InviteSessionPage() {
   }
 
   if (completed || session.status === "COMPLETED") {
+    const doneUi = getIntervieweeUi(interview.language);
     return (
       <div className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
         <Card className="w-full max-w-md">
           <CardContent className="py-12 text-center">
             <CheckCircle2 className="mx-auto h-16 w-16 text-secondary-500" />
-            <h2 className="mt-4 text-2xl font-bold">Thank you!</h2>
+            <h2 className="mt-4 text-2xl font-bold">{doneUi.thankYou}</h2>
             {completionReason === "TIME_LIMIT_EXCEEDED" && (
               <p className="mt-2 text-sm text-amber-600">
-                The session time limit has been reached and the interview was ended automatically.
+                {doneUi.timeLimitEnded}
               </p>
             )}
-            <p className="mt-2 text-muted-foreground">
-              Your interview has been completed successfully. We appreciate your
-              time and thoughtful responses.
-            </p>
+            <p className="mt-2 text-muted-foreground">{doneUi.completedBody}</p>
           </CardContent>
         </Card>
       </div>
