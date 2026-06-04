@@ -8,20 +8,30 @@ Open-source AI interview platform for voice, chat, and video — automate screen
 
 
 
-<p align="center">
-  <img src="./public/brand-logo.svg" alt="聆悟 Lingwu" width="120" />
-</p>
+AI-powered interview platform that conducts structured interviews autonomously. You design an interview, share a link, and Aural's AI handles the conversation — asking questions, probing with follow-ups, and generating detailed analysis when the session is complete.
 
-<h1 align="center">聆悟 Lingwu</h1>
+# Design Your Interview
 
-<p align="center">
-  <strong>深度对话，自动洞察。</strong><br/>
-  开源 AI 面试平台，支持语音、文字与视频面试，面向招聘与练习场景。
-</p>
+Describe what you want to learn in plain language. The AI generates a complete interview with questions, assessment criteria, and recommended settings — or build one manually with the flexible editor.
 
-<p align="center">
-  <a href="https://www.gitcc.com/">GitCC 开源社区</a>
-</p>
+# AI complete interview
+
+ The AI generates a complete interview with questions, assessment criteria, and recommended settings — or build one manually with the flexible editor.
+
+# Start NOW!!
+
+
+https://www.haacoo.com/     AI complete interview
+
+
+#  haacoo
+
+An Open-Source AI Interview Platform: Simply describe the job role and assessment objectives in natural language to automatically generate interview questions and scoring rubrics. Candidates can join via a link for an AI-hosted voice or text interview, with a comprehensive analysis report generated instantly upon completion. This platform is ideal for corporate hiring, mock interviews at training institutions, and personal job-seeking practice.
+
+# Project Origin
+
+Traditional offline interviews and manual evaluations are costly and difficult to scale, while remote recruitment often lacks standardized assessment and documentation tools. Lingwu streamlines the entire process—from question generation and hosting to follow-up inquiries, scoring, and post-interview reviews—into a reusable digital workflow, significantly reducing repetitive tasks for HR professionals and interviewers.
+
 
 ---
 
