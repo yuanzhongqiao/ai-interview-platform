@@ -33,6 +33,16 @@ An Open-Source AI Interview Platform: Simply describe the job role and assessmen
 Traditional offline interviews and manual evaluations are costly and difficult to scale, while remote recruitment often lacks standardized assessment and documentation tools. Lingwu streamlines the entire process—from question generation and hosting to follow-up inquiries, scoring, and post-interview reviews—into a reusable digital workflow, significantly reducing repetitive tasks for HR professionals and interviewers.
 
 
+
+# install self hosted
+
+
+```bash
+    https://github.com/yuanzhongqiao/ai-interview-platform
+cd  ai-interview-platform
+```
+
+
 ---
 
 ## 1. 项目简介
@@ -188,12 +198,12 @@ HR 为「Java 后端校招」生成一套 AI 面试，向数百名候选人发�
 
 ### 代码仓库
 
-- **Git 地址**：https://www.gitcc.com/yi-ee/aural-oss  
+- **Git 地址**：     https://github.com/yuanzhongqiao/ai-interview-platform
 - **克隆**：
 
 ```bash
-git clone https://www.gitcc.com/yi-ee/aural-oss.git
-cd aural-oss
+    https://github.com/yuanzhongqiao/ai-interview-platform
+cd  ai-interview-platform
 ```
 
 ### 环境要求
