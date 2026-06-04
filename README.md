@@ -10,11 +10,11 @@ Open-source AI interview platform for voice, chat, and video — automate screen
 
 AI-powered interview platform that conducts structured interviews autonomously. You design an interview, share a link, and Aural's AI handles the conversation — asking questions, probing with follow-ups, and generating detailed analysis when the session is complete.
 
-# Design Your Interview
+## Design Your Interview
 
 Describe what you want to learn in plain language. The AI generates a complete interview with questions, assessment criteria, and recommended settings — or build one manually with the flexible editor.
 
-# AI complete interview
+## AI complete interview
 
  The AI generates a complete interview with questions, assessment criteria, and recommended settings — or build one manually with the flexible editor.
 
